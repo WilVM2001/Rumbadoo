@@ -1,2120 +1,698 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rumbadoo - Encuentra tu ritmo</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumbadoo - Encuentra tu ritmo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+:root{
+  --p900:#2d1b69;--p800:#4a2c8a;--p700:#6b3fa0;--p600:#8b5cf6;--p500:#a78bfa;
+  --p400:#c4b5fd;--p300:#ddd6fe;--p200:#ede9fe;--p100:#f5f3ff;
+  --rose:#f43f5e;--pink:#ec4899;--gold:#fbbf24;
+  --white:#fff;--g50:#fafafa;--g100:#f4f4f5;--g200:#e4e4e7;--g300:#d4d4d8;
+  --g400:#a1a1aa;--g500:#71717a;--g600:#52525b;--g700:#3f3f46;--g800:#27272a;
+  --shadow:0 4px 24px rgba(74,44,138,.12);
+  --shadow-lg:0 8px 40px rgba(74,44,138,.18);
+  --r:20px;--rs:12px;--rf:9999px;
+  --t:.3s cubic-bezier(.4,0,.2,1);
+  --f:'Nunito',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:var(--f);background:linear-gradient(135deg,#2d1b69,#4a2c8a 30%,#6b3fa0 60%,#8b5cf6);color:var(--g900);overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 30%,rgba(139,92,246,.15) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(196,181,253,.12) 0%,transparent 50%),radial-gradient(circle at 50% 50%,rgba(216,180,254,.08) 0%,transparent 60%);pointer-events:none;z-index:0}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--p400);border-radius:3px}
+#app{position:relative;z-index:1;width:100%;max-width:480px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--white);box-shadow:0 20px 60px rgba(74,44,138,.25);overflow:hidden}
+.hidden{display:none!important}
 
-    :root {
-      --purple-900: #2d1b69;
-      --purple-800: #4a2c8a;
-      --purple-700: #6b3fa0;
-      --purple-600: #8b5cf6;
-      --purple-500: #a78bfa;
-      --purple-400: #c4b5fd;
-      --purple-300: #ddd6fe;
-      --purple-200: #ede9fe;
-      --purple-100: #f5f3ff;
-      --lavender:    #e6d5f5;
-      --lilac:       #d8b4fe;
-      --violet:      #7c3aed;
-      --pink-accent: #ec4899;
-      --rose:        #f43f5e;
-      --gold:        #fbbf24;
-      --white:       #ffffff;
-      --gray-50:     #fafafa;
-      --gray-100:    #f4f4f5;
-      --gray-200:    #e4e4e7;
-      --gray-300:    #d4d4d8;
-      --gray-400:    #a1a1aa;
-      --gray-500:    #71717a;
-      --gray-600:    #52525b;
-      --gray-700:    #3f3f46;
-      --gray-800:    #27272a;
-      --gray-900:    #18181b;
-      --shadow-sm:   0 1px 2px rgba(0,0,0,.05);
-      --shadow:      0 4px 24px rgba(74,44,138,.12);
-      --shadow-lg:   0 8px 40px rgba(74,44,138,.18);
-      --shadow-xl:   0 20px 60px rgba(74,44,138,.25);
-      --radius:      20px;
-      --radius-sm:   12px;
-      --radius-full: 9999px;
-      --transition:  0.3s cubic-bezier(.4,0,.2,1);
-      --font:        'Nunito', system-ui, -apple-system, sans-serif;
-    }
+/* AUTH */
+#auth-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,var(--p100),var(--white) 50%,var(--p200));overflow-y:auto}
+.auth-logo{font-size:48px;font-weight:900;background:linear-gradient(135deg,var(--p700),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;letter-spacing:-1px}
+.auth-sub{color:var(--g500);font-size:14px;margin-bottom:8px;font-weight:600}
+.auth-toggle{display:flex;gap:4px;background:var(--p100);border-radius:var(--rf);padding:4px;margin-bottom:24px;width:100%;max-width:360px}
+.auth-toggle button{flex:1;padding:10px 16px;border:none;border-radius:var(--rf);font-family:var(--f);font-size:14px;font-weight:700;cursor:pointer;transition:var(--t);background:transparent;color:var(--g500)}
+.auth-toggle button.active{background:var(--white);color:var(--p700);box-shadow:var(--shadow)}
+.auth-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
+.auth-form label{font-size:13px;font-weight:700;color:var(--p800);margin-bottom:-8px}
+.auth-form input,.auth-form select,.auth-form textarea{width:100%;padding:12px 16px;border:2px solid var(--p200);border-radius:var(--rs);font-family:var(--f);font-size:15px;background:var(--white);transition:var(--t);outline:none}
+.auth-form input:focus,.auth-form select:focus,.auth-form textarea:focus{border-color:var(--p500);box-shadow:0 0 0 4px rgba(139,92,246,.15)}
+.auth-form textarea{resize:vertical;min-height:64px}
+.auth-error{color:var(--rose);font-size:13px;font-weight:600;text-align:center;min-height:20px}
 
-    * { margin:0; padding:0; box-sizing:border-box; }
+.btn-primary{padding:14px 24px;border:none;border-radius:var(--rf);font-family:var(--f);font-size:16px;font-weight:800;color:var(--white);background:linear-gradient(135deg,var(--p600),var(--p700));cursor:pointer;transition:var(--t);box-shadow:0 4px 16px rgba(139,92,246,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(139,92,246,.45)}
+.btn-primary:active{transform:translateY(0)}
+.avatar-preview-wrap{display:flex;align-items:center;gap:12px;margin-top:4px}
+.avatar-preview-wrap img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid var(--p300);background:var(--p100)}
 
-    html, body {
-      height:100%;
-      font-family:var(--font);
-      background: linear-gradient(135deg, #2d1b69 0%, #4a2c8a 30%, #6b3fa0 60%, #8b5cf6 100%);
-      color:var(--gray-900);
-      overflow:hidden;
-    }
+/* MAIN */
+#main-screen{flex:1;display:flex;flex-direction:column}
+.main-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:relative;z-index:10}
+.main-header .logo{font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--p700),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:8px;border-radius:50%;transition:var(--t);color:var(--g600);position:relative}
+.header-btn:hover{background:var(--p100);color:var(--p700)}
+.badge{position:absolute;top:0;right:0;background:var(--rose);color:var(--white);font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:var(--rf);display:flex;align-items:center;justify-content:center;padding:0 4px;transform:translate(4px,-4px)}
 
-    body::before {
-      content:'';
-      position:fixed;
-      inset:0;
-      background:
-        radial-gradient(circle at 20% 30%, rgba(139,92,246,.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(196,181,253,.12) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(216,180,254,.08) 0%, transparent 60%);
-      pointer-events:none;
-      z-index:0;
-    }
+.tab-bar{display:flex;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--p100);padding:0 8px}
+.tab-btn{flex:1;padding:10px 8px 12px;background:none;border:none;font-family:var(--f);font-size:13px;font-weight:700;color:var(--g400);cursor:pointer;transition:var(--t);position:relative;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab-btn .tab-icon{font-size:18px}
+.tab-btn.active{color:var(--p700)}
+.tab-btn.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:3px;background:linear-gradient(90deg,var(--p500),var(--p700));border-radius:3px 3px 0 0}
+.tab-content{flex:1;overflow:hidden;position:relative}
+.tab-pane{position:absolute;inset:0;overflow-y:auto;padding:16px;display:none}
+.tab-pane.active{display:block}
 
-    ::-webkit-scrollbar { width:6px; }
-    ::-webkit-scrollbar-track { background:transparent; }
-    ::-webkit-scrollbar-thumb { background:var(--purple-400); border-radius:3px; }
+/* DISCOVER */
+#discover-pane{display:none;flex-direction:column;align-items:center;justify-content:center;padding:0}
+#discover-pane.active{display:flex}
+.card-stack{position:relative;width:100%;max-width:400px;height:480px;margin:12px auto 8px}
+.profile-card{position:absolute;width:100%;height:100%;border-radius:var(--r);overflow:hidden;background:var(--white);box-shadow:var(--shadow-lg);transition:transform .35s ease,opacity .35s ease;cursor:grab;user-select:none;touch-action:none}
+.profile-card .card-bg{width:100%;height:100%;object-fit:cover;display:block}
+.profile-card .card-overlay{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.7))}
+.profile-card .card-info{position:absolute;bottom:0;left:0;right:0;padding:24px 20px 20px;color:var(--white)}
+.profile-card .card-name{font-size:26px;font-weight:800}
+.profile-card .card-age{font-weight:600;font-size:20px;opacity:.9}
+.profile-card .card-bio{font-size:14px;font-weight:400;opacity:.85;margin-top:4px;line-height:1.4}
+.profile-card .card-gender{display:inline-block;font-size:12px;font-weight:700;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);padding:2px 12px;border-radius:var(--rf);margin-top:6px}
+.swipe-indicator{position:absolute;top:32px;padding:8px 20px;border-radius:var(--rs);font-size:28px;font-weight:900;opacity:0;transform:rotate(-16deg);pointer-events:none;transition:opacity .15s;z-index:5}
+.swipe-indicator.like{left:24px;color:var(--rose);border:4px solid var(--rose)}
+.swipe-indicator.nope{right:24px;color:var(--g400);border:4px solid var(--g400)}
+.swipe-indicator.show{opacity:1}
+.card-actions{display:flex;align-items:center;justify-content:center;gap:24px;padding:8px 0 16px}
+.action-btn{width:60px;height:60px;border-radius:50%;border:none;font-size:28px;cursor:pointer;transition:var(--t);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);background:var(--white)}
+.action-btn:hover{transform:scale(1.1)}
+.action-btn:active{transform:scale(.9)}
+.action-btn.pass{color:var(--g400);border:2px solid var(--g200)}
+.action-btn.like{color:var(--rose);border:2px solid #fecdd3}
+.action-btn.like:hover{background:#fff1f2;border-color:var(--rose);box-shadow:0 4px 20px rgba(244,63,94,.25)}
+.action-btn.super{color:var(--gold);border:2px solid #fef3c7;font-size:22px}
+.no-more{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;color:var(--g500)}
+.no-more .emoji-big{font-size:64px;margin-bottom:12px}
+.no-more h3{font-size:20px;font-weight:800;color:var(--p700);margin-bottom:4px}
+.no-more p{font-size:14px}
 
-    #app {
-      position:relative;
-      z-index:1;
-      width:100%;
-      max-width:480px;
-      height:100vh;
-      margin:0 auto;
-      display:flex;
-      flex-direction:column;
-      background:var(--white);
-      box-shadow:var(--shadow-xl);
-      overflow:hidden;
-    }
+/* MATCHES */
+#matches-pane .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+#matches-pane .section-header h2{font-size:20px;font-weight:800;color:var(--p800)}
+.match-count{background:var(--p100);color:var(--p700);padding:2px 14px;border-radius:var(--rf);font-size:14px;font-weight:800}
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.match-card{background:var(--white);border-radius:var(--rs);overflow:hidden;box-shadow:var(--shadow);text-align:center;padding-bottom:12px;animation:fadeUp .4s ease backwards;border:2px solid transparent}
+.match-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--p300)}
+.match-card img{width:100%;height:140px;object-fit:cover;display:block;background:var(--p100)}
+.match-card .match-name{font-weight:700;font-size:14px;margin-top:8px;color:var(--g800)}
+.match-card .match-age{font-size:12px;color:var(--g500);font-weight:600}
+.empty-state{text-align:center;padding:60px 24px;color:var(--g400)}
+.empty-state .emoji-big{font-size:56px;margin-bottom:8px}
+.empty-state h3{font-weight:700;font-size:18px;color:var(--g500)}
 
-    /* ============================================================
-       PANTALLA DE AUTENTICACIÓN
-       ============================================================ */
-    #auth-screen {
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      padding:32px 24px;
-      background: linear-gradient(160deg, var(--purple-100) 0%, var(--white) 50%, var(--purple-200) 100%);
-      overflow-y:auto;
-    }
-    #auth-screen.hidden { display:none; }
+/* MODAL MATCH */
+.match-modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(45,27,105,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;padding:20px}
+.match-modal{background:var(--white);border-radius:var(--r);padding:40px 32px 32px;text-align:center;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(74,44,138,.25);animation:bounceIn .5s ease backwards;position:relative;overflow:hidden}
+.match-modal::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--p500),var(--pink),var(--gold),var(--pink),var(--p500));background-size:200% 100%;animation:shimmer 2s linear infinite}
+.match-modal .match-emoji{font-size:72px;animation:heartBeat 1s ease infinite;display:block;margin-bottom:4px}
+.match-modal h2{font-size:32px;font-weight:900;background:linear-gradient(135deg,var(--p700),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.match-modal p{color:var(--g500);font-weight:600;margin-bottom:20px}
+.match-modal .match-profiles{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:24px}
+.match-modal .match-profiles img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--p300)}
+.match-modal .match-profiles .heart-icon{font-size:32px;color:var(--rose)}
 
-    .auth-logo {
-      font-size:48px;
-      font-weight:900;
-      background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-      background-clip:text;
-      margin-bottom:4px;
-      letter-spacing:-1px;
-    }
-    .auth-sub {
-      color:var(--gray-500);
-      font-size:14px;
-      margin-bottom:8px;
-      font-weight:600;
-    }
+/* EDIT PROFILE MODAL */
+.edit-overlay{position:fixed;inset:0;z-index:900;background:rgba(45,27,105,.6);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;animation:fadeIn .25s ease;padding:20px}
+.edit-modal{background:var(--white);border-radius:var(--r);padding:28px 24px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(74,44,138,.25);animation:bounceIn .35s ease backwards}
+.edit-modal h2{font-size:22px;font-weight:800;color:var(--p800);text-align:center;margin-bottom:20px}
+.edit-form{display:flex;flex-direction:column;gap:14px}
+.edit-form label{font-size:13px;font-weight:700;color:var(--p800);margin-bottom:-8px}
+.edit-form input,.edit-form select,.edit-form textarea{width:100%;padding:12px 16px;border:2px solid var(--p200);border-radius:var(--rs);font-family:var(--f);font-size:15px;background:var(--white);transition:var(--t);outline:none}
+.edit-form textarea{resize:vertical;min-height:56px}
+.edit-photo-area{display:flex;align-items:center;gap:14px}
+.edit-photo-area img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--p300);background:var(--p100);flex-shrink:0}
+.edit-photo-area .photo-inputs{flex:1;display:flex;flex-direction:column;gap:6px}
+.edit-photo-area .photo-inputs input[type=file]{font-size:13px;padding:6px 0;border:none}
+.edit-photo-area .photo-inputs input[type=url]{font-size:13px;padding:8px 12px}
+.edit-actions{display:flex;gap:10px;margin-top:4px}
+.btn-secondary{flex:1;padding:14px 24px;border:2px solid var(--p200);border-radius:var(--rf);font-family:var(--f);font-size:16px;font-weight:800;color:var(--g500);background:var(--white);cursor:pointer;transition:var(--t)}
+.btn-secondary:hover{border-color:var(--p400);color:var(--p700);background:var(--p50)}
 
-    .auth-toggle {
-      display:flex;
-      gap:4px;
-      background:var(--purple-100);
-      border-radius:var(--radius-full);
-      padding:4px;
-      margin-bottom:24px;
-      width:100%;
-      max-width:360px;
-    }
-    .auth-toggle button {
-      flex:1;
-      padding:10px 16px;
-      border:none;
-      border-radius:var(--radius-full);
-      font-family:var(--font);
-      font-size:14px;
-      font-weight:700;
-      cursor:pointer;
-      transition:var(--transition);
-      background:transparent;
-      color:var(--gray-500);
-    }
-    .auth-toggle button.active {
-      background:var(--white);
-      color:var(--purple-700);
-      box-shadow:var(--shadow);
-    }
-    .auth-toggle button:hover { color:var(--purple-600); }
+/* ADMIN */
+#admin-screen{position:fixed;inset:0;z-index:500;background:var(--white);display:flex;flex-direction:column;animation:fadeIn .3s ease}
+.admin-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--p900);color:var(--white)}
+.admin-header h2{font-size:18px;font-weight:800}
+.admin-close{background:none;border:none;color:var(--white);font-size:24px;cursor:pointer;padding:4px 8px}
+.admin-body{flex:1;overflow-y:auto;padding:16px 20px}
+.admin-stats{display:flex;gap:12px;margin-bottom:16px}
+.admin-stat-card{flex:1;padding:14px;border-radius:var(--rs);text-align:center;background:var(--p100)}
+.admin-stat-card .num{font-size:28px;font-weight:900;color:var(--p700)}
+.admin-stat-card .label{font-size:12px;font-weight:700;color:var(--g500)}
+.admin-profile-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--g50);border-radius:var(--rs);margin-bottom:8px;border:1px solid var(--g200)}
+.admin-profile-item img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+.admin-profile-item .info{flex:1;min-width:0}
+.admin-profile-item .info .name{font-weight:700;font-size:14px}
+.admin-profile-item .info .detail{font-size:12px;color:var(--g500)}
+.admin-profile-item .admin-del-btn{padding:6px 14px;border:none;border-radius:var(--rs);font-family:var(--f);font-size:12px;font-weight:700;color:var(--white);background:var(--rose);cursor:pointer;transition:var(--t)}
+.admin-profile-item .admin-del-btn:hover{background:#e11d48}
 
-    .auth-form {
-      width:100%;
-      max-width:360px;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-    .auth-form.hidden { display:none; }
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounceIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes heartBeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.15)}60%{transform:scale(1)}}
+@keyframes shimmer{0%{background-position:0 50%}100%{background-position:200% 50%}}
+@keyframes floatHearts{0%{opacity:1;transform:translateY(0) scale(0) rotate(0)}50%{opacity:.8;transform:translateY(-40vh) scale(1) rotate(180deg)}100%{opacity:0;transform:translateY(-80vh) scale(.5) rotate(360deg)}}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(-10vh) rotate(0)}100%{opacity:0;transform:translateY(100vh) rotate(720deg)}}
+.heart-particle{position:fixed;z-index:9999;pointer-events:none;font-size:24px;animation:floatHearts 2.5s ease-out forwards}
+.confetti-piece{position:fixed;z-index:9998;pointer-events:none;width:10px;height:10px;animation:confettiFall 2.5s ease-in forwards}
 
-    .auth-form label {
-      font-size:13px;
-      font-weight:700;
-      color:var(--purple-800);
-      margin-bottom:-8px;
-    }
-    .auth-form input,
-    .auth-form select,
-    .auth-form textarea {
-      width:100%;
-      padding:12px 16px;
-      border:2px solid var(--purple-200);
-      border-radius:var(--radius-sm);
-      font-family:var(--font);
-      font-size:15px;
-      background:var(--white);
-      transition:var(--transition);
-      outline:none;
-    }
-    .auth-form input:focus,
-    .auth-form select:focus,
-    .auth-form textarea:focus {
-      border-color:var(--purple-500);
-      box-shadow:0 0 0 4px rgba(139,92,246,.15);
-    }
-    .auth-form textarea {
-      resize:vertical;
-      min-height:64px;
-    }
-
-    .btn-primary {
-      padding:14px 24px;
-      border:none;
-      border-radius:var(--radius-full);
-      font-family:var(--font);
-      font-size:16px;
-      font-weight:800;
-      color:var(--white);
-      background: linear-gradient(135deg, var(--purple-600), var(--violet));
-      cursor:pointer;
-      transition:var(--transition);
-      box-shadow:0 4px 16px rgba(139,92,246,.35);
-      letter-spacing:0.3px;
-    }
-    .btn-primary:hover {
-      transform:translateY(-2px);
-      box-shadow:0 6px 24px rgba(139,92,246,.45);
-    }
-    .btn-primary:active { transform:translateY(0); }
-    .btn-danger {
-      background: linear-gradient(135deg, var(--rose), #e11d48);
-      box-shadow:0 4px 16px rgba(244,63,94,.35);
-    }
-    .btn-danger:hover { box-shadow:0 6px 24px rgba(244,63,94,.45); }
-
-    .avatar-preview-wrap {
-      display:flex;
-      align-items:center;
-      gap:12px;
-      margin-top:4px;
-    }
-    .avatar-preview-wrap img {
-      width:56px; height:56px;
-      border-radius:50%;
-      object-fit:cover;
-      border:3px solid var(--purple-300);
-      background:var(--purple-100);
-    }
-
-    .auth-error {
-      color:var(--rose);
-      font-size:13px;
-      font-weight:600;
-      text-align:center;
-      min-height:20px;
-    }
-
-    /* ============================================================
-       PANTALLA PRINCIPAL
-       ============================================================ */
-    #main-screen {
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      background: linear-gradient(180deg, var(--purple-50, #faf5ff) 0%, var(--white) 100%);
-    }
-    #main-screen.hidden { display:none; }
-
-    .main-header {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:16px 20px 8px;
-      background:rgba(255,255,255,.85);
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
-      position:relative;
-      z-index:10;
-    }
-    .main-header .logo {
-      font-size:22px;
-      font-weight:900;
-      background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-      background-clip:text;
-    }
-    .header-actions {
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .header-btn {
-      background:none;
-      border:none;
-      font-size:20px;
-      cursor:pointer;
-      padding:8px;
-      border-radius:50%;
-      transition:var(--transition);
-      position:relative;
-      color:var(--gray-600);
-    }
-    .header-btn:hover { background:var(--purple-100); color:var(--purple-700); }
-    .badge {
-      position:absolute;
-      top:0; right:0;
-      background:var(--rose);
-      color:var(--white);
-      font-size:10px;
-      font-weight:800;
-      min-width:18px; height:18px;
-      border-radius:var(--radius-full);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:0 4px;
-      transform:translate(4px,-4px);
-    }
-
-    .tab-bar {
-      display:flex;
-      background:rgba(255,255,255,.85);
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
-      border-bottom:1px solid var(--purple-100);
-      position:relative;
-      z-index:10;
-      padding:0 8px;
-    }
-    .tab-btn {
-      flex:1;
-      padding:10px 8px 12px;
-      background:none;
-      border:none;
-      font-family:var(--font);
-      font-size:13px;
-      font-weight:700;
-      color:var(--gray-400);
-      cursor:pointer;
-      transition:var(--transition);
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-    }
-    .tab-btn .tab-icon { font-size:18px; }
-    .tab-btn.active { color:var(--purple-700); }
-    .tab-btn.active::after {
-      content:'';
-      position:absolute;
-      bottom:0;
-      left:50%;
-      transform:translateX(-50%);
-      width:32px;
-      height:3px;
-      background: linear-gradient(90deg, var(--purple-500), var(--violet));
-      border-radius:3px 3px 0 0;
-    }
-    .tab-btn:hover { color:var(--purple-600); }
-
-    .tab-content {
-      flex:1;
-      overflow:hidden;
-      position:relative;
-    }
-    .tab-pane {
-      position:absolute;
-      inset:0;
-      overflow-y:auto;
-      padding:16px;
-      display:none;
-    }
-    .tab-pane.active { display:block; }
-
-    /* ============================================================
-       TAB: DESCUBRIR
-       ============================================================ */
-    #discover-pane {
-      display:none;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      padding:0;
-    }
-    #discover-pane.active { display:flex; }
-
-    .card-stack {
-      position:relative;
-      width:100%;
-      max-width:400px;
-      height:480px;
-      margin:12px auto 8px;
-    }
-
-    .profile-card {
-      position:absolute;
-      width:100%;
-      height:100%;
-      border-radius:var(--radius);
-      overflow:hidden;
-      background:var(--white);
-      box-shadow:var(--shadow-lg);
-      transition:transform 0.35s ease, opacity 0.35s ease;
-      cursor:grab;
-      user-select:none;
-      touch-action:none;
-    }
-    .profile-card.swiping {
-      transition:none;
-      cursor:grabbing;
-    }
-
-    .profile-card .card-bg {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-    .profile-card .card-overlay {
-      position:absolute;
-      inset:0;
-      background: linear-gradient(transparent 50%, rgba(0,0,0,.7));
-    }
-    .profile-card .card-info {
-      position:absolute;
-      bottom:0;
-      left:0;
-      right:0;
-      padding:24px 20px 20px;
-      color:var(--white);
-    }
-    .profile-card .card-name {
-      font-size:26px;
-      font-weight:800;
-      letter-spacing:-0.5px;
-    }
-    .profile-card .card-age {
-      font-weight:600;
-      font-size:20px;
-      opacity:.9;
-    }
-    .profile-card .card-bio {
-      font-size:14px;
-      font-weight:400;
-      opacity:.85;
-      margin-top:4px;
-      line-height:1.4;
-    }
-    .profile-card .card-gender {
-      display:inline-block;
-      font-size:12px;
-      font-weight:700;
-      background:rgba(255,255,255,.2);
-      backdrop-filter:blur(4px);
-      padding:2px 12px;
-      border-radius:var(--radius-full);
-      margin-top:6px;
-    }
-
-    .swipe-indicator {
-      position:absolute;
-      top:32px;
-      padding:8px 20px;
-      border-radius:var(--radius-sm);
-      font-size:28px;
-      font-weight:900;
-      opacity:0;
-      transform:rotate(-16deg);
-      pointer-events:none;
-      transition:opacity 0.15s;
-      z-index:5;
-    }
-    .swipe-indicator.like {
-      left:24px;
-      color:var(--rose);
-      border:4px solid var(--rose);
-      text-shadow:0 2px 8px rgba(0,0,0,.2);
-    }
-    .swipe-indicator.nope {
-      right:24px;
-      color:var(--gray-400);
-      border:4px solid var(--gray-400);
-      text-shadow:0 2px 8px rgba(0,0,0,.2);
-    }
-    .swipe-indicator.show { opacity:1; }
-
-    .card-actions {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:24px;
-      padding:8px 0 16px;
-    }
-    .action-btn {
-      width:60px; height:60px;
-      border-radius:50%;
-      border:none;
-      font-size:28px;
-      cursor:pointer;
-      transition:var(--transition);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      box-shadow:var(--shadow);
-      background:var(--white);
-    }
-    .action-btn:hover { transform:scale(1.1); }
-    .action-btn:active { transform:scale(.9); }
-    .action-btn.pass {
-      color:var(--gray-400);
-      border:2px solid var(--gray-200);
-    }
-    .action-btn.pass:hover {
-      border-color:var(--gray-400);
-      box-shadow:0 4px 16px rgba(0,0,0,.1);
-    }
-    .action-btn.like {
-      color:var(--rose);
-      border:2px solid #fecdd3;
-    }
-    .action-btn.like:hover {
-      background:#fff1f2;
-      border-color:var(--rose);
-      box-shadow:0 4px 20px rgba(244,63,94,.25);
-    }
-    .action-btn.super {
-      color:var(--gold);
-      border:2px solid #fef3c7;
-      font-size:22px;
-    }
-    .action-btn.super:hover {
-      background:#fffbeb;
-      border-color:var(--gold);
-      box-shadow:0 4px 20px rgba(251,191,36,.25);
-    }
-
-    .no-more {
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      padding:40px 24px;
-      color:var(--gray-500);
-    }
-    .no-more .emoji-big { font-size:64px; margin-bottom:12px; }
-    .no-more h3 { font-size:20px; font-weight:800; color:var(--purple-700); margin-bottom:4px; }
-    .no-more p { font-size:14px; }
-
-    /* ============================================================
-       TAB: MATCHES
-       ============================================================ */
-    #matches-pane .section-header {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:16px;
-    }
-    #matches-pane .section-header h2 {
-      font-size:20px;
-      font-weight:800;
-      color:var(--purple-800);
-    }
-    .match-count {
-      background: var(--purple-100);
-      color: var(--purple-700);
-      padding: 2px 14px;
-      border-radius: var(--radius-full);
-      font-size: 14px;
-      font-weight: 800;
-    }
-    .matches-grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
-      gap:12px;
-    }
-    .match-card {
-      background:var(--white);
-      border-radius:var(--radius-sm);
-      overflow:hidden;
-      box-shadow:var(--shadow);
-      transition:var(--transition);
-      text-align:center;
-      padding-bottom:12px;
-      animation:fadeUp 0.4s ease backwards;
-      border:2px solid transparent;
-    }
-    .match-card:hover {
-      transform:translateY(-3px);
-      box-shadow:var(--shadow-lg);
-      border-color:var(--purple-300);
-    }
-    .match-card img {
-      width:100%;
-      height:140px;
-      object-fit:cover;
-      display:block;
-      background:var(--purple-100);
-    }
-    .match-card .match-name {
-      font-weight:700;
-      font-size:14px;
-      margin-top:8px;
-      color:var(--gray-800);
-    }
-    .match-card .match-age {
-      font-size:12px;
-      color:var(--gray-500);
-      font-weight:600;
-    }
-    .empty-state {
-      text-align:center;
-      padding:60px 24px;
-      color:var(--gray-400);
-    }
-    .empty-state .emoji-big { font-size:56px; margin-bottom:8px; }
-    .empty-state h3 { font-weight:700; font-size:18px; color:var(--gray-500); }
-
-    /* ============================================================
-       MODAL MATCH
-       ============================================================ */
-    .match-modal-overlay {
-      position:fixed;
-      inset:0;
-      z-index:1000;
-      background:rgba(45,27,105,.7);
-      backdrop-filter:blur(8px);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      animation:fadeIn 0.3s ease;
-      padding:20px;
-    }
-    .match-modal-overlay.hidden { display:none; }
-
-    .match-modal {
-      background:var(--white);
-      border-radius:var(--radius);
-      padding:40px 32px 32px;
-      text-align:center;
-      max-width:400px;
-      width:100%;
-      box-shadow:var(--shadow-xl);
-      animation:bounceIn 0.5s ease backwards;
-      position:relative;
-      overflow:hidden;
-    }
-    .match-modal::before {
-      content:'';
-      position:absolute;
-      top:0; left:0; right:0;
-      height:4px;
-      background: linear-gradient(90deg, var(--purple-500), var(--pink-accent), var(--gold), var(--pink-accent), var(--purple-500));
-      background-size:200% 100%;
-      animation:shimmer 2s linear infinite;
-    }
-    .match-modal .match-emoji {
-      font-size:72px;
-      animation:heartBeat 1s ease infinite;
-      display:block;
-      margin-bottom:4px;
-    }
-    .match-modal h2 {
-      font-size:32px;
-      font-weight:900;
-      background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-      background-clip:text;
-      margin-bottom:4px;
-    }
-    .match-modal p {
-      color:var(--gray-500);
-      font-weight:600;
-      margin-bottom:20px;
-    }
-    .match-modal .match-profiles {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:16px;
-      margin-bottom:24px;
-    }
-    .match-modal .match-profiles img {
-      width:80px; height:80px;
-      border-radius:50%;
-      object-fit:cover;
-      border:3px solid var(--purple-300);
-    }
-    .match-modal .match-profiles .heart-icon {
-      font-size:32px;
-      color:var(--rose);
-    }
-
-    /* ============================================================
-       MODAL EDITAR PERFIL
-       ============================================================ */
-    .edit-overlay {
-      position:fixed;
-      inset:0;
-      z-index:900;
-      background:rgba(45,27,105,.6);
-      backdrop-filter:blur(6px);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      animation:fadeIn 0.25s ease;
-      padding:20px;
-    }
-    .edit-overlay.hidden { display:none; }
-
-    .edit-modal {
-      background:var(--white);
-      border-radius:var(--radius);
-      padding:28px 24px;
-      max-width:400px;
-      width:100%;
-      max-height:90vh;
-      overflow-y:auto;
-      box-shadow:var(--shadow-xl);
-      animation:bounceIn 0.35s ease backwards;
-    }
-    .edit-modal h2 {
-      font-size:22px;
-      font-weight:800;
-      color:var(--purple-800);
-      text-align:center;
-      margin-bottom:20px;
-    }
-    .edit-form {
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-    .edit-form label {
-      font-size:13px;
-      font-weight:700;
-      color:var(--purple-800);
-      margin-bottom:-8px;
-    }
-    .edit-form input,
-    .edit-form select,
-    .edit-form textarea {
-      width:100%;
-      padding:12px 16px;
-      border:2px solid var(--purple-200);
-      border-radius:var(--radius-sm);
-      font-family:var(--font);
-      font-size:15px;
-      background:var(--white);
-      transition:var(--transition);
-      outline:none;
-    }
-    .edit-form input:focus,
-    .edit-form select:focus,
-    .edit-form textarea:focus {
-      border-color:var(--purple-500);
-      box-shadow:0 0 0 4px rgba(139,92,246,.15);
-    }
-    .edit-form textarea { resize:vertical; min-height:56px; }
-
-    .edit-photo-area {
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-    .edit-photo-area img {
-      width:64px; height:64px;
-      border-radius:50%;
-      object-fit:cover;
-      border:3px solid var(--purple-300);
-      background:var(--purple-100);
-      flex-shrink:0;
-    }
-    .edit-photo-area .photo-inputs {
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .edit-photo-area .photo-inputs input[type="file"] {
-      font-size:13px;
-      padding:6px 0;
-      border:none;
-    }
-    .edit-photo-area .photo-inputs input[type="url"] {
-      font-size:13px;
-      padding:8px 12px;
-    }
-    .edit-actions {
-      display:flex;
-      gap:10px;
-      margin-top:4px;
-    }
-    .edit-actions .btn-primary { flex:1; }
-    .btn-secondary {
-      flex:1;
-      padding:14px 24px;
-      border:2px solid var(--purple-200);
-      border-radius:var(--radius-full);
-      font-family:var(--font);
-      font-size:16px;
-      font-weight:800;
-      color:var(--gray-500);
-      background:var(--white);
-      cursor:pointer;
-      transition:var(--transition);
-    }
-    .btn-secondary:hover {
-      border-color:var(--purple-400);
-      color:var(--purple-700);
-      background:var(--purple-50);
-    }
-
-    /* ============================================================
-       ADMIN PANEL
-       ============================================================ */
-    #admin-screen {
-      position:fixed;
-      inset:0;
-      z-index:500;
-      background:var(--white);
-      display:flex;
-      flex-direction:column;
-      animation:fadeIn 0.3s ease;
-    }
-    #admin-screen.hidden { display:none; }
-
-    .admin-header {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:16px 20px;
-      background:var(--purple-900);
-      color:var(--white);
-    }
-    .admin-header h2 { font-size:18px; font-weight:800; }
-    .admin-close {
-      background:none;
-      border:none;
-      color:var(--white);
-      font-size:24px;
-      cursor:pointer;
-      padding:4px 8px;
-    }
-
-    .admin-body {
-      flex:1;
-      overflow-y:auto;
-      padding:16px 20px;
-    }
-    .admin-stats {
-      display:flex;
-      gap:12px;
-      margin-bottom:16px;
-    }
-    .admin-stat-card {
-      flex:1;
-      padding:14px;
-      border-radius:var(--radius-sm);
-      text-align:center;
-      background:var(--purple-100);
-    }
-    .admin-stat-card .num {
-      font-size:28px;
-      font-weight:900;
-      color:var(--purple-700);
-    }
-    .admin-stat-card .label {
-      font-size:12px;
-      font-weight:700;
-      color:var(--gray-500);
-    }
-
-    .admin-profile-item {
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:12px;
-      background:var(--gray-50);
-      border-radius:var(--radius-sm);
-      margin-bottom:8px;
-      border:1px solid var(--gray-200);
-    }
-    .admin-profile-item img {
-      width:44px; height:44px;
-      border-radius:50%;
-      object-fit:cover;
-    }
-    .admin-profile-item .info {
-      flex:1;
-      min-width:0;
-    }
-    .admin-profile-item .info .name {
-      font-weight:700;
-      font-size:14px;
-    }
-    .admin-profile-item .info .detail {
-      font-size:12px;
-      color:var(--gray-500);
-    }
-    .admin-profile-item .admin-del-btn {
-      padding:6px 14px;
-      border:none;
-      border-radius:var(--radius-sm);
-      font-family:var(--font);
-      font-size:12px;
-      font-weight:700;
-      color:var(--white);
-      background:var(--rose);
-      cursor:pointer;
-      transition:var(--transition);
-    }
-    .admin-profile-item .admin-del-btn:hover { background:#e11d48; }
-
-    /* ============================================================
-       ANIMACIONES
-       ============================================================ */
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes bounceIn {
-      0%{opacity:0;transform:scale(.7)}
-      60%{transform:scale(1.05)}
-      100%{opacity:1;transform:scale(1)}
-    }
-    @keyframes heartBeat {
-      0%,100%{transform:scale(1)}
-      15%{transform:scale(1.25)}
-      30%{transform:scale(1)}
-      45%{transform:scale(1.15)}
-      60%{transform:scale(1)}
-    }
-    @keyframes shimmer {
-      0%{background-position:0% 50%}
-      100%{background-position:200% 50%}
-    }
-    @keyframes floatHearts {
-      0%{opacity:1;transform:translateY(0) scale(0) rotate(0)}
-      50%{opacity:.8;transform:translateY(-40vh) scale(1) rotate(180deg)}
-      100%{opacity:0;transform:translateY(-80vh) scale(.5) rotate(360deg)}
-    }
-    @keyframes confettiFall {
-      0%{opacity:1;transform:translateY(-10vh) rotate(0)}
-      100%{opacity:0;transform:translateY(100vh) rotate(720deg)}
-    }
-
-    .heart-particle {
-      position:fixed;
-      z-index:9999;
-      pointer-events:none;
-      font-size:24px;
-      animation:floatHearts 2.5s ease-out forwards;
-    }
-    .confetti-piece {
-      position:fixed;
-      z-index:9998;
-      pointer-events:none;
-      width:10px;
-      height:10px;
-      animation:confettiFall 2.5s ease-in forwards;
-    }
-
-    /* ============================================================
-       RESPONSIVE
-       ============================================================ */
-    @media(max-width:500px){
-      #app { max-width:100%; border-radius:0; }
-      .card-stack { height:420px; }
-      .profile-card .card-name { font-size:22px; }
-      .profile-card .card-info { padding:18px 16px 14px; }
-      .action-btn { width:52px; height:52px; font-size:22px; }
-      .matches-grid { grid-template-columns:repeat(2,1fr); }
-      .match-modal { padding:32px 20px 24px; }
-      .match-modal .match-profiles img { width:64px; height:64px; }
-      .admin-stats { flex-direction:column; }
-    }
-    @media(max-width:360px){
-      .card-stack { height:360px; }
-      .action-btn { width:46px; height:46px; font-size:18px; gap:16px; }
-      .card-actions { gap:14px; }
-    }
-
-    .hidden { display:none !important; }
-  </style>
+@media(max-width:500px){
+  #app{max-width:100%}.card-stack{height:420px}
+  .profile-card .card-name{font-size:22px}
+  .profile-card .card-info{padding:18px 16px 14px}
+  .action-btn{width:52px;height:52px;font-size:22px}
+  .matches-grid{grid-template-columns:repeat(2,1fr)}
+  .match-modal{padding:32px 20px 24px}
+  .match-modal .match-profiles img{width:64px;height:64px}
+  .admin-stats{flex-direction:column}
+}
+@media(max-width:360px){
+  .card-stack{height:360px}
+  .action-btn{width:46px;height:46px;font-size:18px;gap:16px}
+}
+</style>
 </head>
 <body>
-  <div id="app">
+<div id="app">
 
-    <!-- ==================== AUTENTICACIÓN ==================== -->
-    <div id="auth-screen">
-      <div class="auth-logo">💜 Rumbadoo</div>
-      <div class="auth-sub">Encuentra tu ritmo</div>
-
-      <div class="auth-toggle">
-        <button id="tab-login" class="active">Iniciar sesión</button>
-        <button id="tab-register">Registrarse</button>
-      </div>
-
-      <div class="auth-error" id="auth-error"></div>
-
-      <!-- LOGIN -->
-      <form class="auth-form" id="login-form">
-        <label for="login-name">Nombre de usuario</label>
-        <input type="text" id="login-name" placeholder="Tu nombre" required>
-
-        <label for="login-pass">Contraseña</label>
-        <input type="password" id="login-pass" placeholder="••••••" required>
-
-        <button type="submit" class="btn-primary">💜 Entrar</button>
-      </form>
-
-      <!-- REGISTRO -->
-      <form class="auth-form hidden" id="register-form">
-        <label for="reg-name">Nombre</label>
-        <input type="text" id="reg-name" placeholder="Ej: Carlos" required>
-
-        <label for="reg-pass">Contraseña</label>
-        <input type="password" id="reg-pass" placeholder="Mínimo 4 caracteres" minlength="4" required>
-
-        <label for="reg-age">Edad</label>
-        <input type="number" id="reg-age" placeholder="18" min="18" max="120" required>
-
-        <label for="reg-gender">Género</label>
-        <select id="reg-gender">
-          <option value="Hombre">Hombre</option>
-          <option value="Mujer">Mujer</option>
-          <option value="No binario">No binario</option>
-          <option value="Otro">Otro</option>
-        </select>
-
-        <label for="reg-bio">Frase de perfil</label>
-        <textarea id="reg-bio" placeholder="Cuéntanos algo divertido sobre ti..." maxlength="150"></textarea>
-
-        <label for="reg-photo">Foto de perfil (URL opcional)</label>
-        <div class="avatar-preview-wrap">
-          <img id="avatar-preview" src="https://ui-avatars.com/api/?name=T&background=8b5cf6&color=fff&size=128" alt="Preview">
-          <input type="url" id="reg-photo" placeholder="https://... o déjalo vacío">
-        </div>
-
-        <button type="submit" class="btn-primary">💜 ¡Registrarse!</button>
-      </form>
+  <!-- ==================== AUTH ==================== -->
+  <div id="auth-screen">
+    <div class="auth-logo">💜 Rumbadoo</div>
+    <div class="auth-sub">Encuentra tu ritmo</div>
+    <div class="auth-toggle">
+      <button id="tab-login" class="active">Iniciar sesión</button>
+      <button id="tab-register">Registrarse</button>
     </div>
+    <div class="auth-error" id="auth-error"></div>
 
-    <!-- ==================== PANTALLA PRINCIPAL ==================== -->
-    <div id="main-screen" class="hidden">
+    <form class="auth-form" id="login-form">
+      <label for="login-name">Nombre</label>
+      <input type="text" id="login-name" placeholder="Tu nombre" required>
+      <label for="login-pass">Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••" required>
+      <button type="submit" class="btn-primary">💜 Entrar</button>
+    </form>
 
-      <div class="main-header">
-        <span class="logo">💜 Rumbadoo</span>
-        <div class="header-actions">
-          <button class="header-btn" id="btn-likes" title="Mis likes">👍</button>
-          <button class="header-btn" id="btn-profile" title="Mi perfil">👤</button>
-          <button class="header-btn" id="btn-logout" title="Cerrar sesión">🚪</button>
-        </div>
+    <form class="auth-form hidden" id="register-form">
+      <label for="reg-name">Nombre</label>
+      <input type="text" id="reg-name" placeholder="Ej: Carlos" required>
+      <label for="reg-pass">Contraseña</label>
+      <input type="password" id="reg-pass" placeholder="Mínimo 4 caracteres" minlength="4" required>
+      <label for="reg-age">Edad</label>
+      <input type="number" id="reg-age" placeholder="18" min="18" max="120" required>
+      <label for="reg-gender">Género</label>
+      <select id="reg-gender">
+        <option value="Hombre">Hombre</option>
+        <option value="Mujer">Mujer</option>
+        <option value="No binario">No binario</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <label for="reg-bio">Frase de perfil</label>
+      <textarea id="reg-bio" placeholder="Cuéntanos algo divertido..." maxlength="150"></textarea>
+      <label for="reg-photo">Foto (URL opcional)</label>
+      <div class="avatar-preview-wrap">
+        <img id="avatar-preview" src="https://ui-avatars.com/api/?name=T&background=8b5cf6&color=fff&size=128" alt="">
+        <input type="url" id="reg-photo" placeholder="https://... o déjalo vacío">
       </div>
-
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="discover">
-          <span class="tab-icon">🔍</span> Descubrir
-        </button>
-        <button class="tab-btn" data-tab="matches">
-          <span class="tab-icon">💕</span> Matches
-          <span class="badge hidden" id="matches-badge">0</span>
-        </button>
-      </div>
-
-      <div class="tab-content">
-        <div class="tab-pane active" id="discover-pane">
-          <div class="card-stack" id="card-stack"></div>
-          <div class="card-actions" id="card-actions">
-            <button class="action-btn pass" id="btn-pass">👎</button>
-            <button class="action-btn like" id="btn-like">❤️</button>
-            <button class="action-btn super" id="btn-super">⭐</button>
-          </div>
-          <div class="no-more hidden" id="no-more">
-            <div class="emoji-big">🌈</div>
-            <h3>¡No hay más perfiles!</h3>
-            <p>Vuelve pronto para ver nuevos rumbos.</p>
-          </div>
-        </div>
-
-        <div class="tab-pane" id="matches-pane">
-          <div class="section-header">
-            <h2>💕 Tus matches</h2>
-            <span class="match-count" id="match-count">0</span>
-          </div>
-          <div class="matches-grid" id="matches-grid"></div>
-          <div class="empty-state hidden" id="matches-empty">
-            <div class="emoji-big">💔</div>
-            <h3>Sin matches todavía</h3>
-            <p>¡Sigue explorando perfiles!</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
+      <button type="submit" class="btn-primary">💜 ¡Registrarse!</button>
+    </form>
   </div>
 
-  <!-- ==================== ADMIN PANEL ==================== -->
-  <div id="admin-screen" class="hidden">
-    <div class="admin-header">
-      <h2>🛡️ Panel Admin — Rumbadoo</h2>
-      <button class="admin-close" id="admin-close">✕</button>
-    </div>
-    <div class="admin-body" id="admin-body">
-      <div class="admin-stats" id="admin-stats"></div>
-      <h3 style="font-size:16px;font-weight:800;color:var(--purple-800);margin-bottom:12px;">Perfiles registrados</h3>
-      <div id="admin-profile-list"></div>
-    </div>
-  </div>
-
-  <!-- ==================== MODAL MATCH ==================== -->
-  <div class="match-modal-overlay hidden" id="match-modal">
-    <div class="match-modal">
-      <span class="match-emoji">💜</span>
-      <h2>¡Es un Match!</h2>
-      <p>También le gustas a esta persona</p>
-      <div class="match-profiles">
-        <img id="match-my-avatar" src="" alt="Tú">
-        <span class="heart-icon">💜</span>
-        <img id="match-their-avatar" src="" alt="Match">
+  <!-- ==================== MAIN ==================== -->
+  <div id="main-screen" class="hidden">
+    <div class="main-header">
+      <span class="logo">💜 Rumbadoo</span>
+      <div style="display:flex;gap:4px">
+        <button class="header-btn" id="btn-likes" title="Mis likes">👍</button>
+        <button class="header-btn" id="btn-profile" title="Mi perfil">👤</button>
+        <button class="header-btn" id="btn-logout" title="Cerrar sesión">🚪</button>
       </div>
-      <button class="btn-primary" id="match-continue">💜 ¡Seguir conociendo!</button>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="discover"><span class="tab-icon">🔍</span> Descubrir</button>
+      <button class="tab-btn" data-tab="matches"><span class="tab-icon">💕</span> Matches <span class="badge hidden" id="matches-badge">0</span></button>
+    </div>
+    <div class="tab-content">
+      <div class="tab-pane active" id="discover-pane">
+        <div class="card-stack" id="card-stack"></div>
+        <div class="card-actions" id="card-actions">
+          <button class="action-btn pass" id="btn-pass">👎</button>
+          <button class="action-btn like" id="btn-like">❤️</button>
+          <button class="action-btn super" id="btn-super">⭐</button>
+        </div>
+        <div class="no-more hidden" id="no-more">
+          <div class="emoji-big">🌈</div>
+          <h3>¡No hay más perfiles!</h3>
+          <p>Vuelve pronto para ver nuevos rumbos.</p>
+        </div>
+      </div>
+      <div class="tab-pane" id="matches-pane">
+        <div class="section-header"><h2>💕 Tus matches</h2><span class="match-count" id="match-count">0</span></div>
+        <div class="matches-grid" id="matches-grid"></div>
+        <div class="empty-state hidden" id="matches-empty"><div class="emoji-big">💔</div><h3>Sin matches todavía</h3><p>¡Sigue explorando perfiles!</p></div>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- ==================== MODAL EDITAR PERFIL ==================== -->
-  <div class="edit-overlay hidden" id="edit-overlay">
-    <div class="edit-modal">
-      <h2>✏️ Editar perfil</h2>
-      <form class="edit-form" id="edit-form">
-        <label for="edit-name">Nombre</label>
-        <input type="text" id="edit-name" required>
-
-        <label for="edit-age">Edad</label>
-        <input type="number" id="edit-age" min="18" max="120" required>
-
-        <label for="edit-gender">Género</label>
-        <select id="edit-gender">
-          <option value="Hombre">Hombre</option>
-          <option value="Mujer">Mujer</option>
-          <option value="No binario">No binario</option>
-          <option value="Otro">Otro</option>
-        </select>
-
-        <label for="edit-bio">Frase de perfil</label>
-        <textarea id="edit-bio" maxlength="150"></textarea>
-
-        <label>Foto de perfil</label>
-        <div class="edit-photo-area">
-          <img id="edit-photo-preview" src="" alt="Preview">
-          <div class="photo-inputs">
-            <input type="file" id="edit-photo-file" accept="image/*">
-            <input type="url" id="edit-photo-url" placeholder="O pega una URL...">
-          </div>
-        </div>
-
-        <div class="edit-actions">
-          <button type="button" class="btn-secondary" id="edit-cancel">Cancelar</button>
-          <button type="submit" class="btn-primary">💜 Guardar</button>
-        </div>
-      </form>
-    </div>
+<!-- ADMIN -->
+<div id="admin-screen" class="hidden">
+  <div class="admin-header"><h2>🛡️ Panel Admin</h2><button class="admin-close" id="admin-close">✕</button></div>
+  <div class="admin-body">
+    <div class="admin-stats" id="admin-stats"></div>
+    <h3 style="font-size:16px;font-weight:800;color:var(--p800);margin-bottom:12px;">Perfiles registrados</h3>
+    <div id="admin-profile-list"></div>
   </div>
+</div>
 
-  <script>
-    /* ==============================================================
-       RUMBADOO — App full-stack (IndexedDB + API serverless)
-       ============================================================== */
+<!-- MATCH MODAL -->
+<div class="match-modal-overlay hidden" id="match-modal">
+  <div class="match-modal">
+    <span class="match-emoji">💜</span>
+    <h2>¡Es un Match!</h2>
+    <p>También le gustas a esta persona</p>
+    <div class="match-profiles">
+      <img id="match-my-avatar" src="" alt="Tú">
+      <span class="heart-icon">💜</span>
+      <img id="match-their-avatar" src="" alt="Match">
+    </div>
+    <button class="btn-primary" id="match-continue">💜 ¡Seguir conociendo!</button>
+  </div>
+</div>
 
-    // ─── Utilidades ──────────────────────────────────────────
-    const $ = id => document.getElementById(id);
-
-    function avatarUrl(name) {
-      const c = ['8b5cf6','7c3aed','6b3fa0','4a2c8a','a78bfa','c4b5fd','ddd6fe','e6d5f5','2d1b69'];
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${c[name.length % c.length]}&color=fff&size=256&bold=true`;
-    }
-
-    function hashPass(pw) {
-      let h = 0;
-      for (let i = 0; i < pw.length; i++) { h = ((h << 5) - h) + pw.charCodeAt(i); h |= 0; }
-      return 'h' + Math.abs(h).toString(36);
-    }
-
-    function genId() {
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    }
-
-    // ==============================================================
-    //   CAPA 1: MiniSQL (IndexedDB) — funciona offline, sin servidor
-    // ==============================================================
-    class MiniSQL {
-      constructor(dbName, version) {
-        this.dbName = dbName;
-        this.version = version;
-        this.db = null;
-      }
-      open(stores) {
-        return new Promise((resolve, reject) => {
-          const req = indexedDB.open(this.dbName, this.version);
-          req.onupgradeneeded = (ev) => {
-            const db = ev.target.result;
-            stores.forEach(s => {
-              if (!db.objectStoreNames.contains(s.name)) {
-                const store = db.createObjectStore(s.name, { keyPath: s.key || 'id', autoIncrement: !!s.auto });
-                if (s.indexes) s.indexes.forEach(idx => store.createIndex(idx.name, idx.key, idx.opts || {}));
-              }
-            });
-          };
-          req.onsuccess = (ev) => { this.db = ev.target.result; resolve(); };
-          req.onerror = (ev) => reject(ev.target.error);
-        });
-      }
-      insert(storeName, data) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readwrite');
-          const store = tx.objectStore(storeName);
-          const req = store.put(data);
-          req.onsuccess = () => resolve(data);
-          req.onerror = () => reject(req.error);
-        });
-      }
-      select(storeName, query) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readonly');
-          const store = tx.objectStore(storeName);
-          let req;
-          if (!query) req = store.getAll();
-          else if (query.id) req = store.get(query.id);
-          else if (query.index && query.value) req = store.index(query.index).getAll(query.value);
-          else req = store.getAll();
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
-      selectAll(storeName) { return this.select(storeName); }
-      update(storeName, data) { return this.insert(storeName, data); }
-      delete(storeName, id) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readwrite');
-          const store = tx.objectStore(storeName);
-          store.delete(id);
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-      }
-    }
-
-    // ==============================================================
-//   CAPA 2: APIDB — Conexión al backend (Vercel serverless)
-    // ==============================================================
-    class APIDB {
-      constructor() { this.base = window.location.origin + '/api'; }
-
-      async api(path, opts = {}) {
-        const headers = { 'Content-Type': 'application/json', ...opts.headers };
-        if (currentUser) headers['x-user-id'] = currentUser.id;
-        const res = await fetch(this.base + path, { headers, ...opts });
-        if (!res.ok) {
-          const txt = await res.text().catch(() => '');
-          try { const j = JSON.parse(txt); throw new Error(j.error || 'Error del servidor'); }
-          catch(e) { if (e.message.includes('Error del servidor')) throw e; throw new Error('Error ' + res.status); }
-        }
-        return res.json();
-      }
-
-      async health() { try { await this.api('/health'); return true; } catch(e) { return false; } }
-
-      async getProfile(id) {
-        const d = await this.api('/profile/' + encodeURIComponent(id));
-        return d.id ? d : null;
-      }
-      async getProfileByName(name) {
-        const all = await this.api('/profiles');
-        return all.find(p => p.name === name) || null;
-      }
-      async getAllProfiles(excludeId) {
-        return this.api('/profiles?exclude=' + encodeURIComponent(excludeId || ''));
-      }
-      async createProfile(data) {
-        return this.api('/register', { method: 'POST', body: JSON.stringify(data) });
-      }
-      async updateProfile(id, data) {
-        return this.api('/profile/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(data) });
-      }
-      async deleteProfile(id) { return this.adminDeleteProfile(id); }
-      async getInteractionsByUser(userId) {
-        return this.api('/interactions/' + encodeURIComponent(userId));
-      }
-      async createInteraction(fromId, toId, type) {
-        return this.api('/interactions', {
-          method: 'POST',
-          body: JSON.stringify({ fromId, toId, type })
-        });
-      }
-      async getMatchesByUser(userId) {
-        return this.api('/matches/' + encodeURIComponent(userId));
-      }
-      async getAdminStats() {
-        const [stats, profiles] = await Promise.all([
-          this.api('/admin/stats'),
-          this.api('/profiles')
-        ]);
-        return { ...stats, profiles };
-      }
-      async adminDeleteProfile(id) {
-        await this.api('/admin/profile/' + encodeURIComponent(id), { method: 'DELETE' });
-      }
-    }
-
-    // ==============================================================
-    //   CAPA 3: Data Layer Unificado
-    // ==============================================================
-    const data = {
-      mode: 'api',      // 'api' | 'indexeddb'
-      backend: null,     // APIDB instance
-      mini: null,        // MiniSQL instance (fallback)
-
-      async init() {
-        // Intentar conectar al servidor primero
-        this.backend = new APIDB();
-        const serverUp = await this.backend.health();
-        if (serverUp) { this.mode = 'api'; return; }
-
-        // Si no hay servidor, usar IndexedDB
-        console.log('💜 Servidor no disponible, usando modo local (IndexedDB)');
-        this.mini = new MiniSQL('RumbadooDB', 1);
-        const stores = [
-          { name: 'profiles', key: 'id', indexes: [{ name: 'by_name', key: 'name' }] },
-          { name: 'interactions', key: 'id', indexes: [{ name: 'by_from', key: 'fromId' }, { name: 'by_to', key: 'toId' }] },
-          { name: 'matches', key: 'id', indexes: [{ name: 'by_user1', key: 'user1Id' }, { name: 'by_user2', key: 'user2Id' }] }
-        ];
-        await this.mini.open(stores);
-
-        const admins = await this.mini.select('profiles', { index: 'by_name', value: '__admin__' });
-        if (!admins || admins.length === 0) {
-          await this.mini.insert('profiles', {
-            id: 'admin_' + genId(), name: '__admin__',
-            password: hashPass('admin123'), role: 'admin',
-            createdAt: new Date().toISOString()
-          });
-        }
-        this.mode = 'indexeddb';
-      },
-
-      isApiMode() { return this.mode === 'api'; },
-
-      async getProfile(id) {
-        if (this.mode === 'api') return this.backend.getProfile(id);
-        return this.mini.select('profiles', { id });
-      },
-      async getProfileByName(name) {
-        if (this.mode === 'api') return this.backend.getProfileByName(name);
-        const rows = await this.mini.select('profiles', { index: 'by_name', value: name });
-        return rows?.[0] || null;
-      },
-      async getAllProfiles(excludeId) {
-        if (this.mode === 'api') return this.backend.getAllProfiles(excludeId);
-        const all = await this.mini.selectAll('profiles');
-        return (all || []).filter(p => p.id !== excludeId && p.role !== 'admin');
-      },
-      async createProfile(data) {
-        if (this.mode === 'api') {
-          const res = await this.backend.createProfile(data);
-          return res.profile || { ...data, id: res.profile?.id || genId() };
-        }
-        const id = genId();
-        data.id = id;
-        await this.mini.insert('profiles', data);
-        return data;
-      },
-      async updateProfile(id, data) {
-        if (this.mode === 'api') {
-          const res = await this.backend.updateProfile(id, data);
-          return res.profile || data;
-        }
-        data.id = id;
-        await this.mini.update('profiles', data);
-        return data;
-      },
-      async deleteProfile(id) {
-        if (this.mode === 'api') return this.backend.deleteProfile(id);
-        const allI = await this.mini.selectAll('interactions') || [];
-        for (const i of allI) { if (i.fromId === id || i.toId === id) await this.mini.delete('interactions', i.id); }
-        const allM = await this.mini.selectAll('matches') || [];
-        for (const m of allM) { if (m.user1Id === id || m.user2Id === id) await this.mini.delete('matches', m.id); }
-        await this.mini.delete('profiles', id);
-      },
-      async getInteractionsByUser(userId) {
-        if (this.mode === 'api') return this.backend.getInteractionsByUser(userId);
-        const all = await this.mini.selectAll('interactions') || [];
-        return all.filter(i => i.fromId === userId);
-      },
-      async createInteraction(fromId, toId, type) {
-        if (this.mode === 'api') return this.backend.createInteraction(fromId, toId, type);
-        const id = genId();
-        const interaction = { id, fromId, toId, type, createdAt: new Date().toISOString() };
-        await this.mini.insert('interactions', interaction);
-        let match = null;
-        if (type === 'like') {
-          const theirLikes = await this.mini.select('interactions', { index: 'by_from', value: toId }) || [];
-          if (theirLikes.some(i => i.toId === fromId && i.type === 'like')) {
-            const existing = await this.mini.selectAll('matches') || [];
-            if (!existing.some(m => (m.user1Id === fromId && m.user2Id === toId) || (m.user1Id === toId && m.user2Id === fromId))) {
-              const mid = genId();
-              match = { id: mid, user1Id: fromId, user2Id: toId, createdAt: new Date().toISOString() };
-              await this.mini.insert('matches', match);
-            }
-          }
-        }
-        return { interactionId: id, match };
-      },
-      async getMatchesByUser(userId) {
-        if (this.mode === 'api') return this.backend.getMatchesByUser(userId);
-        const all = await this.mini.selectAll('matches') || [];
-        return all.filter(m => m.user1Id === userId || m.user2Id === userId);
-      },
-      async getAdminStats() {
-        if (this.mode === 'api') return this.backend.getAdminStats();
-        const allProfiles = await this.mini.selectAll('profiles') || [];
-        const allMatches = await this.mini.selectAll('matches') || [];
-        const allInteractions = await this.mini.selectAll('interactions') || [];
-        return { users: allProfiles.filter(p => p.role !== 'admin').length, matches: allMatches.length, interactions: allInteractions.length };
-      },
-      async adminDeleteProfile(id) {
-        if (this.mode === 'api') return this.backend.adminDeleteProfile(id);
-        return this.deleteProfile(id);
-      }
-    };
-
-    // ==============================================================
-    //   ESTADO GLOBAL
-    // ==============================================================
-    let currentUser = null;
-    let isSwiping = false;
-    let loading = false;
-
-    // ==============================================================
-    //   REFERENCIAS DOM
-    // ==============================================================
-    const authScreen       = $('auth-screen');
-    const mainScreen       = $('main-screen');
-    const loginForm        = $('login-form');
-    const registerForm     = $('register-form');
-    const tabLogin         = $('tab-login');
-    const tabRegister      = $('tab-register');
-    const authError        = $('auth-error');
-    const cardStack        = $('card-stack');
-    const noMore           = $('no-more');
-    const cardActions      = $('card-actions');
-    const btnLike          = $('btn-like');
-    const btnPass          = $('btn-pass');
-    const btnSuper         = $('btn-super');
-    const matchesGrid      = $('matches-grid');
-    const matchesEmpty     = $('matches-empty');
-    const matchCount       = $('match-count');
-    const matchModal       = $('match-modal');
-    const matchMyAvatar    = $('match-my-avatar');
-    const matchTheirAvatar = $('match-their-avatar');
-    const matchContinue    = $('match-continue');
-    const matchesBadge     = $('matches-badge');
-    const adminScreen      = $('admin-screen');
-    const adminClose       = $('admin-close');
-    const editOverlay      = $('edit-overlay');
-    const editForm         = $('edit-form');
-    const editName         = $('edit-name');
-    const editAge          = $('edit-age');
-    const editGender       = $('edit-gender');
-    const editBio          = $('edit-bio');
-    const editPhotoPreview = $('edit-photo-preview');
-    const editPhotoFile    = $('edit-photo-file');
-    const editPhotoUrl     = $('edit-photo-url');
-    const editCancel       = $('edit-cancel');
-
-    // ==============================================================
-    //   CONFIGURACIÓN SUPABASE
-    // ==============================================================
-    function showStatusModal() {
-      const isApi = data.isApiMode();
-      const color = isApi ? '#22c55e' : '#a1a1aa';
-      const icon = isApi ? '🟢' : '🟡';
-      const title = isApi ? 'Servidor conectado' : 'Modo local';
-      const desc = isApi
-        ? 'Los datos se guardan en el servidor y están disponibles desde cualquier dispositivo.'
-        : 'No hay servidor disponible. Los datos se guardan solo en este navegador (IndexedDB).';
-      const extra = isApi
-        ? `<p style="font-size:12px;color:#71717a;margin-top:8px;">Servidor: ${window.location.host}</p>`
-        : `<p style="font-size:12px;color:#71717a;margin-top:8px;">Para compartir datos entre dispositivos, ejecuta el servidor: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;">node server.js</code></p>`;
-
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(45,27,105,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease;';
-      overlay.innerHTML = `
-        <div style="background:white;border-radius:20px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(74,44,138,.25);animation:bounceIn .4s ease backwards;text-align:center;">
-          <div style="font-size:48px;margin-bottom:4px;">${icon}</div>
-          <h2 style="font-size:20px;font-weight:800;color:#4a2c8a;margin-bottom:4px;">${title}</h2>
-          <p style="font-size:13px;color:#71717a;margin-bottom:16px;">${desc}</p>
-          ${extra}
-          <button id="st-close" style="margin-top:16px;padding:12px 32px;border:none;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:white;background:linear-gradient(135deg,#8b5cf6,#7c3aed);cursor:pointer;">Cerrar</button>
+<!-- EDIT PROFILE MODAL -->
+<div class="edit-overlay hidden" id="edit-overlay">
+  <div class="edit-modal">
+    <h2>✏️ Editar perfil</h2>
+    <form class="edit-form" id="edit-form">
+      <label for="edit-name">Nombre</label>
+      <input type="text" id="edit-name" required>
+      <label for="edit-age">Edad</label>
+      <input type="number" id="edit-age" min="18" max="120" required>
+      <label for="edit-gender">Género</label>
+      <select id="edit-gender">
+        <option value="Hombre">Hombre</option>
+        <option value="Mujer">Mujer</option>
+        <option value="No binario">No binario</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <label for="edit-bio">Frase de perfil</label>
+      <textarea id="edit-bio" maxlength="150"></textarea>
+      <label>Foto</label>
+      <div class="edit-photo-area">
+        <img id="edit-photo-preview" src="" alt="">
+        <div class="photo-inputs">
+          <input type="file" id="edit-photo-file" accept="image/*">
+          <input type="url" id="edit-photo-url" placeholder="O pega una URL...">
         </div>
-      `;
-      document.body.appendChild(overlay);
+      </div>
+      <div class="edit-actions">
+        <button type="button" class="btn-secondary" id="edit-cancel">Cancelar</button>
+        <button type="submit" class="btn-primary">💜 Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-      const animStyle = document.createElement('style');
-      animStyle.textContent = '@keyframes bounceIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}';
-      document.head.appendChild(animStyle);
+<script>
+/* ==============================================================
+   RUMBADOO — App completa con IndexedDB (Modo local)
+   100% estática, funciona en Vercel sin backend
+   ============================================================== */
 
-      overlay.querySelector('#st-close').onclick = () => { overlay.remove(); animStyle.remove(); };
-      overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); animStyle.remove(); } };
-    }
+// ─── PERFILES DE EJEMPLO ────────────────────────────────────
+const SAMPLE_PROFILES = [
+  { name:'Valentina',age:26,gender:'Mujer',bio:'✨ Bailarina en días libres, programadora de profesión. Busco a alguien que baile conmigo bajo la lluvia.',photo:'https://ui-avatars.com/api/?name=Valentina&background=8b5cf6&color=fff&size=256&bold=true' },
+  { name:'Mateo',age:28,gender:'Hombre',bio:'🎸 Guitarrista y chef frustrado. Puedo tocarte una canción mientras cocino pasta.',photo:'https://ui-avatars.com/api/?name=Mateo&background=7c3aed&color=fff&size=256&bold=true' },
+  { name:'Camila',age:24,gender:'Mujer',bio:'📚 Adicta a los libros y al café. Si me invitas a una librería, me tienes ganada.',photo:'https://ui-avatars.com/api/?name=Camila&background=a78bfa&color=fff&size=256&bold=true' },
+  { name:'Santiago',age:30,gender:'Hombre',bio:'🏋️‍♂️ Fitness lover. Mi religión es el gym y mi pecado favorito es el chocolate.',photo:'https://ui-avatars.com/api/?name=Santiago&background=6b3fa0&color=fff&size=256&bold=true' },
+  { name:'Isabella',age:22,gender:'Mujer',bio:'🎨 Artista y soñadora. Vivo entre acuarelas y atardeceres.',photo:'https://ui-avatars.com/api/?name=Isabella&background=c4b5fd&color=fff&size=256&bold=true' },
+  { name:'Daniel',age:27,gender:'Hombre',bio:'🐶 Mi perro es más interesante que yo. Pero igual dame una oportunidad.',photo:'https://ui-avatars.com/api/?name=Daniel&background=4a2c8a&color=fff&size=256&bold=true' },
+  { name:'Sofía',age:29,gender:'Mujer',bio:'🌮 Amo los tacos y viajar. Si sabes dónde venden los mejores tacos, ya tenemos cita.',photo:'https://ui-avatars.com/api/?name=Sofia&background=ddd6fe&color=333&size=256&bold=true' },
+  { name:'Andrés',age:25,gender:'Hombre',bio:'🎮 Gamer y coleccionista de memes. Busco a alguien que aguante mis jokes malos.',photo:'https://ui-avatars.com/api/?name=Andres&background=8b5cf6&color=fff&size=256&bold=true' },
+  { name:'María José',age:23,gender:'Mujer',bio:'🌸 Amante del yoga, la naturaleza y los cafés con pierna. Busco paz y buena vibra.',photo:'https://ui-avatars.com/api/?name=Maria+Jose&background=e6d5f5&color=333&size=256&bold=true' },
+  { name:'Fernando',age:31,gender:'Hombre',bio:'🎬 Cinefilo empedernido. Puedo recomendarte películas todo el fin de semana.',photo:'https://ui-avatars.com/api/?name=Fernando&background=2d1b69&color=fff&size=256&bold=true' },
+  { name:'Lucía',age:21,gender:'Mujer',bio:'🎤 Cantante en la ducha, fan del karaoke y de los atardeceres en la playa.',photo:'https://ui-avatars.com/api/?name=Lucia&background=a78bfa&color=fff&size=256&bold=true' },
+  { name:'Javier',age:26,gender:'Hombre',bio:'☕ Barista de corazón. Puedo prepararte el mejor latte art de tu vida.',photo:'https://ui-avatars.com/api/?name=Javier&background=7c3aed&color=fff&size=256&bold=true' }
+];
 
-    // ==============================================================
-    //   INICIALIZACIÓN
-    // ==============================================================
-    async function init() {
-      try {
-        await data.init();
-      } catch (e) {
-        document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Nunito,sans-serif;background:linear-gradient(135deg,#2d1b69,#4a2c8a);color:white;padding:40px;text-align:center;font-size:16px;">
-          <p>Error al inicializar la base de datos: ${e.message}</p>
-        </div>`;
-        return;
-      }
-
-      const saved = localStorage.getItem('rumbadoo_session');
-      if (saved) {
-        try {
-          const sid = JSON.parse(saved);
-          const profile = await data.getProfile(sid);
-          if (profile) {
-            currentUser = profile;
-            showMainScreen();
-            return;
+// ─── MINISQL (IndexedDB) ─────────────────────────────────────
+class MiniSQL{
+  constructor(n,v){this.n=n;this.v=v;this.db=null}
+  open(stores){
+    return new Promise((rs,rj)=>{
+      const r=indexedDB.open(this.n,this.v);
+      r.onupgradeneeded=e=>{
+        const d=e.target.result;
+        stores.forEach(s=>{
+          if(!d.objectStoreNames.contains(s.name)){
+            const st=d.createObjectStore(s.name,{keyPath:s.key||'id',autoIncrement:!!s.auto});
+            if(s.indexes)s.indexes.forEach(i=>st.createIndex(i.name,i.key,i.opts||{}));
           }
-        } catch(e) { /* sesión expirada */ }
-      }
-      showAuthScreen();
-    }
-
-    // ==============================================================
-    //   CAMBIO DE PANTALLAS
-    // ==============================================================
-    function showAuthScreen() {
-      authScreen.classList.remove('hidden');
-      mainScreen.classList.add('hidden');
-      adminScreen.classList.add('hidden');
-      authError.textContent = '';
-    }
-
-    function showMainScreen() {
-      authScreen.classList.add('hidden');
-      mainScreen.classList.remove('hidden');
-      adminScreen.classList.add('hidden');
-
-      localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-
-      if (currentUser.role === 'admin') {
-        showAdminPanel();
-        return;
-      }
-
-      loadDiscover();
-      loadMatches();
-      renderBadges();
-    }
-
-    // ==============================================================
-    //   AUTENTICACIÓN
-    // ==============================================================
-    tabLogin.addEventListener('click', () => {
-      tabLogin.classList.add('active');
-      tabRegister.classList.remove('active');
-      loginForm.classList.remove('hidden');
-      registerForm.classList.add('hidden');
-      authError.textContent = '';
+        });
+      };
+      r.onsuccess=e=>{this.db=e.target.result;rs()};
+      r.onerror=e=>rj(e.target.error);
     });
-
-    tabRegister.addEventListener('click', () => {
-      tabRegister.classList.add('active');
-      tabLogin.classList.remove('active');
-      registerForm.classList.remove('hidden');
-      loginForm.classList.add('hidden');
-      authError.textContent = '';
+  }
+  insert(store,data){
+    return new Promise((rs,rj)=>{
+      const tx=this.db.transaction(store,'readwrite');
+      const st=tx.objectStore(store);
+      const r=st.put(data);
+      r.onsuccess=()=>rs(data);
+      r.onerror=()=>rj(r.error);
     });
+  }
+  select(store,q){
+    return new Promise((rs,rj)=>{
+      const tx=this.db.transaction(store,'readonly');
+      const st=tx.objectStore(store);
+      let r;
+      if(!q)r=st.getAll();
+      else if(q.id)r=st.get(q.id);
+      else if(q.index&&q.value)r=st.index(q.index).getAll(q.value);
+      else r=st.getAll();
+      r.onsuccess=()=>rs(r.result);
+      r.onerror=()=>rj(r.error);
+    });
+  }
+  selectAll(store){return this.select(store)}
+  update(store,data){return this.insert(store,data)}
+  delete(store,id){
+    return new Promise((rs,rj)=>{
+      const tx=this.db.transaction(store,'readwrite');
+      tx.objectStore(store).delete(id);
+      tx.oncomplete=()=>rs();
+      tx.onerror=()=>rj(tx.error);
+    });
+  }
+}
 
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = $('login-name').value.trim();
-      const pass = $('login-pass').value;
+// ─── UTILERÍAS ───────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function hashPass(pw){let h=0;for(let i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charCodeAt(i);h|=0}return 'h'+Math.abs(h).toString(36)}
+function avatarUrl(name){const c=['8b5cf6','7c3aed','6b3fa0','4a2c8a','a78bfa','c4b5fd','ddd6fe','e6d5f5','2d1b69'];return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${c[name.length%c.length]}&color=fff&size=256&bold=true`}
 
-      if (!name || !pass) { authError.textContent = 'Completa todos los campos.'; return; }
+// ─── ESTADO ──────────────────────────────────────────────────
+let db,currentUser=null,isSwiping=false,loading=false;
+const STORE_P='profiles',STORE_I='interactions',STORE_M='matches';
+const STORES=[
+  {name:STORE_P,key:'id',indexes:[{name:'by_name',key:'name'}]},
+  {name:STORE_I,key:'id',indexes:[{name:'by_from',key:'fromId'},{name:'by_to',key:'toId'}]},
+  {name:STORE_M,key:'id',indexes:[{name:'by_user1',key:'user1Id'},{name:'by_user2',key:'user2Id'}]}
+];
 
-      try {
-        if (name === 'admin') {
-          const admin = await data.getProfileByName('__admin__');
-          if (admin && admin.password === hashPass(pass)) {
-            currentUser = admin;
-            localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-            showMainScreen();
-            return;
+// ─── DOM REFS ────────────────────────────────────────────────
+const authSc=$('auth-screen'),mainSc=$('main-screen');
+const loginForm=$('login-form'),registerForm=$('register-form');
+const tabLogin=$('tab-login'),tabRegister=$('tab-register');
+const authErr=$('auth-error');
+const cardStack=$('card-stack'),noMore=$('no-more'),cardActions=$('card-actions');
+const btnLike=$('btn-like'),btnPass=$('btn-pass'),btnSuper=$('btn-super');
+const matchesGrid=$('matches-grid'),matchesEmpty=$('matches-empty'),matchCount=$('match-count');
+const matchModal=$('match-modal'),matchMyAvatar=$('match-my-avatar'),matchTheirAvatar=$('match-their-avatar'),matchContinue=$('match-continue');
+const matchesBadge=$('matches-badge');
+const adminSc=$('admin-screen'),adminClose=$('admin-close');
+const editOverlay=$('edit-overlay'),editForm=$('edit-form');
+const editName=$('edit-name'),editAge=$('edit-age'),editGender=$('edit-gender'),editBio=$('edit-bio');
+const editPhotoPreview=$('edit-photo-preview'),editPhotoFile=$('edit-photo-file'),editPhotoUrl=$('edit-photo-url'),editCancel=$('edit-cancel');
+
+// ─── INICIO ──────────────────────────────────────────────────
+async function init(){
+  db=new MiniSQL('RumbadooDB',1);
+  await db.open(STORES);
+
+  // Crear admin por defecto
+  const admins=await db.select(STORE_P,{index:'by_name',value:'__admin__'});
+  if(!admins||!admins.length)await db.insert(STORE_P,{id:'admin_'+genId(),name:'__admin__',password:hashPass('admin123'),role:'admin',createdAt:new Date().toISOString()});
+
+  // Cargar perfiles de ejemplo si es primera vez
+  const existing=await db.selectAll(STORE_P)||[];
+  const sampleIds=existing.filter(p=>p.id?.startsWith('sample_')).length;
+  if(sampleIds===0){
+    for(const sp of SAMPLE_PROFILES){
+      const dup=await db.select(STORE_P,{index:'by_name',value:sp.name});
+      if(!dup||!dup.length)await db.insert(STORE_P,{...sp,id:'sample_'+genId(),password:hashPass('sample'),role:'user',createdAt:new Date().toISOString()});
+    }
+  }
+
+  // Restaurar sesión
+  const saved=localStorage.getItem('rumbadoo_session');
+  if(saved){
+    try{
+      const profile=await db.select(STORE_P,{id:JSON.parse(saved)});
+      if(profile){currentUser=profile;showMain();return}
+    }catch(e){}
+  }
+  showAuth();
+}
+
+// ─── PANTALLAS ───────────────────────────────────────────────
+function showAuth(){authSc.classList.remove('hidden');mainSc.classList.add('hidden');adminSc.classList.add('hidden');authErr.textContent=''}
+function showMain(){
+  authSc.classList.add('hidden');mainSc.classList.remove('hidden');adminSc.classList.add('hidden');
+  localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));
+  if(currentUser.role==='admin'){showAdmin();return}
+  loadDiscover();loadMatches();renderBadges();
+}
+
+// ─── AUTH ────────────────────────────────────────────────────
+tabLogin.onclick=()=>{tabLogin.classList.add('active');tabRegister.classList.remove('active');loginForm.classList.remove('hidden');registerForm.classList.add('hidden');authErr.textContent=''}
+tabRegister.onclick=()=>{tabRegister.classList.add('active');tabLogin.classList.remove('active');registerForm.classList.remove('hidden');loginForm.classList.add('hidden');authErr.textContent=''}
+
+loginForm.onsubmit=async e=>{
+  e.preventDefault();
+  const name=$('login-name').value.trim(),pass=$('login-pass').value;
+  if(!name||!pass){authErr.textContent='Completa todos los campos.';return}
+  try{
+    if(name==='admin'){
+      const a=await db.select(STORE_P,{index:'by_name',value:'__admin__'});
+      if(a&&a[0]&&a[0].password===hashPass(pass)){
+        currentUser=a[0];localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain();return
+      }
+      authErr.textContent='Credenciales de admin inválidas.';return
+    }
+    const p=await db.select(STORE_P,{index:'by_name',value:name});
+    if(!p||!p.length){authErr.textContent='Ese usuario no existe.';return}
+    if(p[0].password!==hashPass(pass)){authErr.textContent='Contraseña incorrecta.';return}
+    currentUser=p[0];localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
+  }catch(e){authErr.textContent=e.message}
+}
+
+registerForm.onsubmit=async e=>{
+  e.preventDefault();
+  const name=$('reg-name').value.trim(),pass=$('reg-pass').value,age=parseInt($('reg-age').value,10);
+  const gender=$('reg-gender').value,bio=$('reg-bio').value.trim();let photo=$('reg-photo').value.trim();
+  if(!name){authErr.textContent='Ingresa tu nombre.';return}
+  if(pass.length<4){authErr.textContent='La contraseña debe tener al menos 4 caracteres.';return}
+  if(!age||age<18){authErr.textContent='Debes tener al menos 18 años.';return}
+  const dup=await db.select(STORE_P,{index:'by_name',value:name});
+  if(dup&&dup.length){authErr.textContent='Ese nombre ya está en uso.';return}
+  if(!photo)photo=avatarUrl(name);
+  const profile={id:genId(),name,password:hashPass(pass),age,gender,bio:bio||'Nuevo en Rumbadoo 💜',photo,role:'user',createdAt:new Date().toISOString()};
+  await db.insert(STORE_P,profile);currentUser=profile;localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
+}
+
+$('reg-photo').oninput=function(){const v=this.value.trim();if(v)$('avatar-preview').src=v;else $('avatar-preview').src=avatarUrl($('reg-name').value.trim()||'T')}
+$('reg-name').oninput=function(){if(!$('reg-photo').value.trim())$('avatar-preview').src=avatarUrl(this.value.trim()||'T')}
+$('btn-logout').onclick=()=>{currentUser=null;localStorage.removeItem('rumbadoo_session');showAuth()}
+
+// ─── DESCUBRIR ───────────────────────────────────────────────
+async function loadDiscover(){
+  if(!currentUser||currentUser.role==='admin'||loading)return;loading=true
+  try{
+    const all=await db.selectAll(STORE_P)||[];
+    const ints=await db.selectAll(STORE_I)||[];
+    const interacted=new Set(ints.filter(i=>i.fromId===currentUser.id).map(i=>i.toId));
+    let avail=(all||[]).filter(p=>p.id!==currentUser.id&&p.role!=='admin'&&!interacted.has(p.id));
+    if(!avail.length){cardStack.innerHTML='';noMore.classList.remove('hidden');cardActions.classList.add('hidden');return}
+    noMore.classList.add('hidden');cardActions.classList.remove('hidden')
+    avail.sort(()=>Math.random()-.5);showCard(avail[0])
+  }catch(e){console.error(e)}finally{loading=false}
+}
+
+function showCard(p){
+  cardStack.innerHTML=''
+  const c=document.createElement('div');c.className='profile-card';c.dataset.profileId=p.id
+  c.innerHTML=`<img class="card-bg" src="${p.photo}" alt="${p.name}" draggable="false"><div class="card-overlay"></div><div class="swipe-indicator like">❤️</div><div class="swipe-indicator nope">👎</div><div class="card-info"><div class="card-name">${p.name} <span class="card-age">${p.age}</span></div><div class="card-bio">${p.bio||''}</div><span class="card-gender">${p.gender||''}</span></div>`
+  cardStack.appendChild(c);setupSwipe(c);c.style.animation='fadeUp .35s ease backwards'
+}
+
+// ─── SWIPE ───────────────────────────────────────────────────
+let sx=0,sy=0,isDrag=false,curCard=null;
+
+function setupSwipe(c){
+  const ind={like:c.querySelector('.swipe-indicator.like'),nope:c.querySelector('.swipe-indicator.nope')}
+  const start=(x,y)=>{if(isSwiping||loading)return;isDrag=true;sx=x;sy=y;c.classList.add('swiping');curCard=c}
+  const move=(x,y)=>{if(!isDrag||!curCard)return;const dx=x-sx;curCard.style.transform=`translate(${dx}px,${y-sy}px) rotate(${dx*.08}deg)`;if(dx>30){ind.like.classList.add('show');ind.nope.classList.remove('show')}else if(dx<-30){ind.nope.classList.add('show');ind.like.classList.remove('show')}else{ind.like.classList.remove('show');ind.nope.classList.remove('show')}}
+  const end=()=>{if(!isDrag||!curCard)return;isDrag=false;ind.like.classList.remove('show');ind.nope.classList.remove('show');const dx=(curCard.getBoundingClientRect().left+curCard.offsetWidth/2)-(window.innerWidth/2);if(Math.abs(dx)>80)handleAction(curCard.dataset.profileId,dx>0?'like':'pass');else{curCard.style.transition='transform .3s ease';curCard.style.transform='';setTimeout(()=>{if(curCard)curCard.classList.remove('swiping')},300)}}
+  c.onmousedown=e=>{e.preventDefault();start(e.clientX,e.clientY)}
+  document.onmousemove=e=>{if(isDrag)move(e.clientX,e.clientY)}
+  document.onmouseup=()=>{if(isDrag)end()}
+  c.addEventListener('touchstart',e=>{const t=e.touches[0];start(t.clientX,t.clientY)},{passive:true})
+  c.addEventListener('touchmove',e=>{if(isDrag){const t=e.touches[0];move(t.clientX,t.clientY)}},{passive:true})
+  c.addEventListener('touchend',()=>{if(isDrag)end()},{passive:true})
+}
+
+// ─── ACCIONES ────────────────────────────────────────────────
+async function handleAction(pid,type){
+  if(isSwiping||loading)return;isSwiping=true
+  const c=document.querySelector('.profile-card');
+  if(c){const d=type==='like'?1:-1;c.style.transition='transform .5s ease,opacity .5s ease';c.style.transform=`translateX(${d*140}%) rotate(${d*24}deg)`;c.style.opacity='0'}
+  setTimeout(async()=>{
+    try{
+      const id=genId();const interaction={id,fromId:currentUser.id,toId:pid,type,createdAt:new Date().toISOString()}
+      await db.insert(STORE_I,interaction)
+      let match=null
+      if(type==='like'){
+        const their=await db.select(STORE_I,{index:'by_from',value:pid})||[]
+        if(their.some(i=>i.toId===currentUser.id&&i.type==='like')){
+          const existing=await db.selectAll(STORE_M)||[]
+          if(!existing.some(m=>(m.user1Id===currentUser.id&&m.user2Id===pid)||(m.user1Id===pid&&m.user2Id===currentUser.id))){
+            const mid=genId();match={id:mid,user1Id:currentUser.id,user2Id:pid,createdAt:new Date().toISOString()}
+            await db.insert(STORE_M,match)
           }
-          authError.textContent = 'Credenciales de admin inválidas.';
-          return;
         }
-
-        const profile = await data.getProfileByName(name);
-        if (!profile) { authError.textContent = 'Ese usuario no existe.'; return; }
-        if (profile.password !== hashPass(pass)) { authError.textContent = 'Contraseña incorrecta.'; return; }
-
-        currentUser = profile;
-        localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-        showMainScreen();
-      } catch (err) {
-        authError.textContent = err.message;
       }
-    });
-
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name   = $('reg-name').value.trim();
-      const pass   = $('reg-pass').value;
-      const age    = parseInt($('reg-age').value, 10);
-      const gender = $('reg-gender').value;
-      const bio    = $('reg-bio').value.trim();
-      let photo    = $('reg-photo').value.trim();
-
-      if (!name) { authError.textContent = 'Ingresa tu nombre.'; return; }
-      if (pass.length < 4) { authError.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
-      if (!age || age < 18) { authError.textContent = 'Debes tener al menos 18 años.'; return; }
-
-      const existing = await data.getProfileByName(name);
-      if (existing) { authError.textContent = 'Ese nombre ya está en uso. Elige otro.'; return; }
-
-      if (!photo) photo = avatarUrl(name);
-
-      try {
-        const created = await data.createProfile({
-          name,
-          password: hashPass(pass),
-          age,
-          gender,
-          bio: bio || 'Nuevo en Rumbadoo 💜',
-          photo
-        });
-        currentUser = created.id ? created : { ...created, id: created.id };
-        localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-        showMainScreen();
-      } catch (err) {
-        authError.textContent = err.message;
+      if(match){
+        const p=await db.select(STORE_P,{id:pid})
+        if(p){matchMyAvatar.src=currentUser.photo;matchTheirAvatar.src=p.photo;matchModal.classList.remove('hidden');spawnHearts();spawnConfetti()}
       }
-    });
+    }catch(e){console.error(e)}
+    try{await loadDiscover();await loadMatches();renderBadges()}catch(e){}finally{isSwiping=false}
+  },400)
+}
 
-    $('reg-photo').addEventListener('input', function() {
-      const val = this.value.trim();
-      if (val) { $('avatar-preview').src = val; }
-      else { $('avatar-preview').src = avatarUrl($('reg-name').value.trim() || 'T'); }
-    });
-    $('reg-name').addEventListener('input', function() {
-      if (!$('reg-photo').value.trim()) {
-        $('avatar-preview').src = avatarUrl(this.value.trim() || 'T');
+btnLike.onclick=()=>{const c=document.querySelector('.profile-card');if(c)handleAction(c.dataset.profileId,'like')}
+btnPass.onclick=()=>{const c=document.querySelector('.profile-card');if(c)handleAction(c.dataset.profileId,'pass')}
+btnSuper.onclick=()=>{const c=document.querySelector('.profile-card');if(c)handleAction(c.dataset.profileId,'like')}
+document.onkeydown=e=>{if(e.key==='ArrowRight')btnLike.click();if(e.key==='ArrowLeft')btnPass.click();if(e.key==='ArrowUp')btnSuper.click()}
+
+// ─── MATCHES ─────────────────────────────────────────────────
+async function loadMatches(){
+  if(!currentUser||currentUser.role==='admin')return
+  try{
+    const all=await db.selectAll(STORE_M)||[]
+    const my=all.filter(m=>m.user1Id===currentUser.id||m.user2Id===currentUser.id)
+    matchesGrid.innerHTML=''
+    if(!my.length){matchesEmpty.classList.remove('hidden');matchCount.textContent='0';return}
+    matchesEmpty.classList.add('hidden');matchCount.textContent=my.length
+    const ids=my.map(m=>m.user1Id===currentUser.id?m.user2Id:m.user1Id)
+    const profiles=await Promise.all(ids.map(id=>db.select(STORE_P,{id}).catch(()=>null)))
+    profiles.forEach((p,i)=>{
+      if(!p)return;const d=document.createElement('div');d.className='match-card';d.style.animationDelay=`${i*.08}s`
+      d.innerHTML=`<img src="${p.photo}" alt="${p.name}" loading="lazy"><div class="match-name">${p.name}</div><div class="match-age">${p.age} años 💜</div>`
+      matchesGrid.appendChild(d)
+    })
+  }catch(e){console.error(e)}
+}
+
+// ─── MODAL MATCH ─────────────────────────────────────────────
+matchContinue.onclick=()=>matchModal.classList.add('hidden')
+matchModal.onclick=e=>{if(e.target===matchModal)matchModal.classList.add('hidden')}
+function spawnHearts(){
+  const emojis=['💜','❤️','💕','💗','🌸','✨']
+  for(let i=0;i<18;i++)setTimeout(()=>{const e=document.createElement('div');e.className='heart-particle';e.textContent=emojis[Math.floor(Math.random()*emojis.length)];e.style.left=Math.random()*100+'vw';e.style.top='60%';e.style.fontSize=(14+Math.random()*20)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),2600)},i*80)
+}
+function spawnConfetti(){
+  const colors=['#8b5cf6','#ec4899','#f43f5e','#fbbf24','#34d399','#60a5fa','#c084fc','#e879f9']
+  for(let i=0;i<40;i++)setTimeout(()=>{const e=document.createElement('div');e.className='confetti-piece';e.style.left=Math.random()*100+'vw';e.style.top='40%';e.style.background=colors[i%colors.length];e.style.width=(6+Math.random()*8)+'px';e.style.height=(6+Math.random()*8)+'px';e.style.borderRadius=Math.random()>.5?'50%':'2px';e.style.transform=`rotate(${Math.random()*360}deg)`;document.body.appendChild(e);setTimeout(()=>e.remove(),2600)},i*40)
+}
+
+// ─── BADGES ──────────────────────────────────────────────────
+async function renderBadges(){
+  if(!currentUser||currentUser.role==='admin')return
+  try{const all=await db.selectAll(STORE_M)||[];const c=all.filter(m=>m.user1Id===currentUser.id||m.user2Id===currentUser.id).length;if(c>0){matchesBadge.textContent=c;matchesBadge.classList.remove('hidden')}else matchesBadge.classList.add('hidden')}catch(e){}
+}
+
+// ─── LIKES ───────────────────────────────────────────────────
+$('btn-likes').onclick=async()=>{
+  if(!currentUser)return
+  const all=await db.selectAll(STORE_I)||[]
+  const likes=all.filter(i=>i.fromId===currentUser.id&&i.type==='like')
+  if(!likes.length){alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');return}
+  const matches=await db.selectAll(STORE_M)||[]
+  let msg='💜 Personas que te gustaron:\n\n'
+  for(const l of likes){
+    const p=await db.select(STORE_P,{id:l.toId})
+    if(p){const isMatch=matches.some(m=>(m.user1Id===currentUser.id&&m.user2Id===p.id)||(m.user1Id===p.id&&m.user2Id===currentUser.id));msg+=`• ${p.name}, ${p.age} ${isMatch?'💕 (Match!)':'⏳'}\n`}
+  }
+  msg+=`\nTotal: ${likes.length} likes`;alert(msg)
+}
+
+// ─── EDITAR PERFIL ───────────────────────────────────────────
+$('btn-profile').onclick=()=>{
+  if(!currentUser)return;const u=currentUser;editName.value=u.name;editAge.value=u.age;editGender.value=u.gender||'Hombre';editBio.value=u.bio||'';editPhotoPreview.src=u.photo;editPhotoUrl.value='';editPhotoFile.value='';editOverlay.classList.remove('hidden')
+}
+editCancel.onclick=()=>editOverlay.classList.add('hidden')
+editOverlay.onclick=e=>{if(e.target===editOverlay)editOverlay.classList.add('hidden')}
+editPhotoFile.onchange=function(){const f=this.files[0];if(!f)return;const r=new FileReader();r.onload=function(e){editPhotoPreview.src=e.target.result;editPhotoUrl.value=''};r.readAsDataURL(f)}
+editPhotoUrl.oninput=function(){const v=this.value.trim();if(v)editPhotoPreview.src=v}
+editForm.onsubmit=async e=>{
+  e.preventDefault();if(!currentUser)return
+  const n=editName.value.trim(),a=parseInt(editAge.value,10),g=editGender.value,b=editBio.value.trim();let p=editPhotoPreview.src
+  if(!n){alert('El nombre no puede estar vacío.');return}
+  if(!a||a<18){alert('Debes tener al menos 18 años.');return}
+  const uv=editPhotoUrl.value.trim();if(uv)p=uv
+  try{
+    if(n!==currentUser.name){const d=await db.select(STORE_P,{index:'by_name',value:n});if(d&&d.length){alert('Ese nombre ya está en uso.');return}}
+    const upd={...currentUser,name:n,age:a,gender:g,bio:b||'Nuevo en Rumbadoo 💜',photo:p}
+    await db.update(STORE_P,upd);currentUser=upd;editOverlay.classList.add('hidden');alert('💜 ¡Perfil actualizado correctamente!')
+  }catch(e){alert(e.message)}
+}
+
+// ─── TABS ────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.onclick=async()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'))
+    btn.classList.add('active');const pane=document.getElementById(btn.dataset.tab+'-pane');if(pane)pane.classList.add('active')
+    if(btn.dataset.tab==='matches')await loadMatches()
+  }
+})
+
+// ─── ADMIN ───────────────────────────────────────────────────
+async function showAdmin(){
+  authSc.classList.add('hidden');mainSc.classList.add('hidden');adminSc.classList.remove('hidden');await refreshAdmin()
+}
+async function refreshAdmin(){
+  try{
+    const all=await db.selectAll(STORE_P)||[],matches=await db.selectAll(STORE_M)||[],ints=await db.selectAll(STORE_I)||[]
+    const users=all.filter(p=>p.role!=='admin')
+    $('admin-stats').innerHTML=`<div class="admin-stat-card"><div class="num">${users.length}</div><div class="label">Usuarios</div></div><div class="admin-stat-card"><div class="num">${matches.length}</div><div class="label">Matches</div></div><div class="admin-stat-card"><div class="num">${ints.length}</div><div class="label">Interacciones</div></div>`
+    const list=$('admin-profile-list');list.innerHTML=''
+    if(!users.length){list.innerHTML='<p style="color:var(--g400);text-align:center;padding:20px;">No hay usuarios registrados.</p>';return}
+    users.forEach(u=>{
+      const d=document.createElement('div');d.className='admin-profile-item'
+      d.innerHTML=`<img src="${u.photo}" alt="${u.name}"><div class="info"><div class="name">${u.name}</div><div class="detail">${u.age||'?'} años · ${u.gender||'—'}</div></div><button class="admin-del-btn" data-id="${u.id}">Eliminar</button>`
+      list.appendChild(d)
+      d.querySelector('.admin-del-btn').onclick=async()=>{
+        if(!confirm(`¿Eliminar a ${u.name}?`))return
+        const relI=ints.filter(i=>i.fromId===u.id||i.toId===u.id);for(const x of relI)await db.delete(STORE_I,x.id)
+        const relM=matches.filter(m=>m.user1Id===u.id||m.user2Id===u.id);for(const x of relM)await db.delete(STORE_M,x.id)
+        await db.delete(STORE_P,u.id);await refreshAdmin()
       }
-    });
+    })
+  }catch(e){console.error(e)}
+}
+adminClose.onclick=()=>{
+  adminSc.classList.add('hidden')
+  if(currentUser&&currentUser.role==='admin'){currentUser=null;localStorage.removeItem('rumbadoo_session');showAuth()}
+  else showMain()
+}
 
-    $('btn-logout').addEventListener('click', () => {
-      currentUser = null;
-      localStorage.removeItem('rumbadoo_session');
-      showAuthScreen();
-    });
-
-    // ==============================================================
-    //   DESCUBRIR
-    // ==============================================================
-    async function loadDiscover() {
-      if (!currentUser || currentUser.role === 'admin' || loading) return;
-      loading = true;
-
-      try {
-        const [profiles, interactions] = await Promise.all([
-          data.getAllProfiles(currentUser.id),
-          data.getInteractionsByUser(currentUser.id)
-        ]);
-
-        const interactedIds = new Set((interactions || []).map(i => i.toId));
-        let available = (profiles || []).filter(p => !interactedIds.has(p.id));
-
-        if (available.length === 0) {
-          cardStack.innerHTML = '';
-          noMore.classList.remove('hidden');
-          cardActions.classList.add('hidden');
-          return;
-        }
-
-        noMore.classList.add('hidden');
-        cardActions.classList.remove('hidden');
-        available.sort(() => Math.random() - 0.5);
-        showCard(available[0]);
-      } catch(e) {
-        console.error('Error cargando perfiles:', e);
-      } finally {
-        loading = false;
-      }
-    }
-
-    function showCard(profile) {
-      cardStack.innerHTML = '';
-      const card = document.createElement('div');
-      card.className = 'profile-card';
-      card.dataset.profileId = profile.id;
-      card.innerHTML = `
-        <img class="card-bg" src="${profile.photo}" alt="${profile.name}" draggable="false">
-        <div class="card-overlay"></div>
-        <div class="swipe-indicator like">❤️</div>
-        <div class="swipe-indicator nope">👎</div>
-        <div class="card-info">
-          <div class="card-name">${profile.name} <span class="card-age">${profile.age}</span></div>
-          <div class="card-bio">${profile.bio || ''}</div>
-          <span class="card-gender">${profile.gender || ''}</span>
-        </div>
-      `;
-      cardStack.appendChild(card);
-      setupSwipe(card);
-      card.style.animation = 'fadeUp 0.35s ease backwards';
-    }
-
-    // ==============================================================
-    //   SWIPE
-    // ==============================================================
-    let swipeStartX = 0, swipeStartY = 0;
-    let isDragging = false;
-    let currentCard = null;
-
-    function setupSwipe(card) {
-      const indicators = {
-        like: card.querySelector('.swipe-indicator.like'),
-        nope: card.querySelector('.swipe-indicator.nope')
-      };
-
-      const onStart = (x, y) => {
-        if (isSwiping || loading) return;
-        isDragging = true;
-        swipeStartX = x; swipeStartY = y;
-        card.classList.add('swiping');
-        currentCard = card;
-      };
-      const onMove = (x, y) => {
-        if (!isDragging || !currentCard) return;
-        const dx = x - swipeStartX;
-        currentCard.style.transform = `translate(${dx}px, ${y - swipeStartY}px) rotate(${dx * 0.08}deg)`;
-        if (dx > 30) { indicators.like.classList.add('show'); indicators.nope.classList.remove('show'); }
-        else if (dx < -30) { indicators.nope.classList.add('show'); indicators.like.classList.remove('show'); }
-        else { indicators.like.classList.remove('show'); indicators.nope.classList.remove('show'); }
-      };
-      const onEnd = () => {
-        if (!isDragging || !currentCard) return;
-        isDragging = false;
-        indicators.like.classList.remove('show');
-        indicators.nope.classList.remove('show');
-        const dx = (currentCard.getBoundingClientRect().left + currentCard.offsetWidth / 2) - (window.innerWidth / 2);
-
-        if (Math.abs(dx) > 80) {
-          handleAction(currentCard.dataset.profileId, dx > 0 ? 'like' : 'pass');
-        } else {
-          currentCard.style.transition = 'transform 0.3s ease';
-          currentCard.style.transform = '';
-          setTimeout(() => { if (currentCard) currentCard.classList.remove('swiping'); }, 300);
-        }
-      };
-
-      card.addEventListener('mousedown', e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
-      document.addEventListener('mousemove', e => { if (isDragging) onMove(e.clientX, e.clientY); });
-      document.addEventListener('mouseup', () => { if (isDragging) onEnd(); });
-      card.addEventListener('touchstart', e => { const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
-      card.addEventListener('touchmove', e => { if (isDragging) { const t = e.touches[0]; onMove(t.clientX, t.clientY); } }, { passive: true });
-      card.addEventListener('touchend', () => { if (isDragging) onEnd(); }, { passive: true });
-    }
-
-    // ==============================================================
-    //   ACCIONES
-    // ==============================================================
-    async function handleAction(profileId, type) {
-      if (isSwiping || loading) return;
-      isSwiping = true;
-
-      const card = document.querySelector('.profile-card');
-      if (card) {
-        const dir = type === 'like' ? 1 : -1;
-        card.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-        card.style.transform = `translateX(${dir * 140}%) rotate(${dir * 24}deg)`;
-        card.style.opacity = '0';
-      }
-
-      setTimeout(async () => {
-        try {
-          const result = await data.createInteraction(currentUser.id, profileId, type);
-
-          if (result.match) {
-            const theirProfile = await data.getProfile(profileId);
-            if (theirProfile) {
-              matchMyAvatar.src = currentUser.photo;
-              matchTheirAvatar.src = theirProfile.photo;
-              matchModal.classList.remove('hidden');
-              spawnHearts();
-              spawnConfetti();
-            }
-          }
-        } catch(e) {
-          console.error('Error en interacción:', e);
-        }
-
-        try {
-          await loadDiscover();
-          await loadMatches();
-          renderBadges();
-        } catch(e) {
-          console.error('Error refrescando:', e);
-        } finally {
-          isSwiping = false;
-        }
-      }, 400);
-    }
-
-    btnLike.addEventListener('click', () => {
-      const card = document.querySelector('.profile-card');
-      if (card) handleAction(card.dataset.profileId, 'like');
-    });
-    btnPass.addEventListener('click', () => {
-      const card = document.querySelector('.profile-card');
-      if (card) handleAction(card.dataset.profileId, 'pass');
-    });
-    btnSuper.addEventListener('click', () => {
-      const card = document.querySelector('.profile-card');
-      if (card) handleAction(card.dataset.profileId, 'like');
-    });
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowRight') btnLike.click();
-      if (e.key === 'ArrowLeft') btnPass.click();
-      if (e.key === 'ArrowUp') btnSuper.click();
-    });
-
-    // ==============================================================
-    //   MATCHES
-    // ==============================================================
-    let matchesCache = {};
-
-    async function loadMatches() {
-      if (!currentUser || currentUser.role === 'admin') return;
-
-      try {
-        const allMatches = await data.getMatchesByUser(currentUser.id) || [];
-
-        matchesGrid.innerHTML = '';
-
-        if (allMatches.length === 0) {
-          matchesEmpty.classList.remove('hidden');
-          matchCount.textContent = '0';
-          return;
-        }
-
-        matchesEmpty.classList.add('hidden');
-        matchCount.textContent = allMatches.length;
-
-        const profileIds = allMatches.map(m => m.user1Id === currentUser.id ? m.user2Id : m.user1Id);
-        const profiles = await Promise.all(profileIds.map(id => data.getProfile(id).catch(() => null)));
-
-        profiles.forEach((p, i) => {
-          if (!p) return;
-          const div = document.createElement('div');
-          div.className = 'match-card';
-          div.style.animationDelay = `${i * 0.08}s`;
-          div.innerHTML = `
-            <img src="${p.photo}" alt="${p.name}" loading="lazy">
-            <div class="match-name">${p.name}</div>
-            <div class="match-age">${p.age} años 💜</div>
-          `;
-          matchesGrid.appendChild(div);
-        });
-      } catch(e) {
-        console.error('Error cargando matches:', e);
-      }
-    }
-
-    // ==============================================================
-    //   MODAL MATCH
-    // ==============================================================
-    matchContinue.addEventListener('click', () => matchModal.classList.add('hidden'));
-    matchModal.addEventListener('click', e => { if (e.target === matchModal) matchModal.classList.add('hidden'); });
-
-    function spawnHearts() {
-      const emojis = ['💜','❤️','💕','💗','🌸','✨'];
-      for (let i = 0; i < 18; i++) {
-        setTimeout(() => {
-          const el = document.createElement('div');
-          el.className = 'heart-particle';
-          el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-          el.style.left = Math.random() * 100 + 'vw';
-          el.style.top = '60%';
-          el.style.fontSize = (14 + Math.random() * 20) + 'px';
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 2600);
-        }, i * 80);
-      }
-    }
-
-    function spawnConfetti() {
-      const colors = ['#8b5cf6','#ec4899','#f43f5e','#fbbf24','#34d399','#60a5fa','#c084fc','#e879f9'];
-      for (let i = 0; i < 40; i++) {
-        setTimeout(() => {
-          const el = document.createElement('div');
-          el.className = 'confetti-piece';
-          el.style.left = Math.random() * 100 + 'vw';
-          el.style.top = '40%';
-          el.style.background = colors[i % colors.length];
-          el.style.width = (6 + Math.random() * 8) + 'px';
-          el.style.height = (6 + Math.random() * 8) + 'px';
-          el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-          el.style.transform = `rotate(${Math.random() * 360}deg)`;
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 2600);
-        }, i * 40);
-      }
-    }
-
-    // ==============================================================
-    //   BADGES
-    // ==============================================================
-    async function renderBadges() {
-      if (!currentUser || currentUser.role === 'admin') return;
-      try {
-        const allMatches = await data.getMatchesByUser(currentUser.id) || [];
-        if (allMatches.length > 0) { matchesBadge.textContent = allMatches.length; matchesBadge.classList.remove('hidden'); }
-        else { matchesBadge.classList.add('hidden'); }
-      } catch(e) { /* ignore */ }
-    }
-
-    // ==============================================================
-    //   LIKES POPUP
-    // ==============================================================
-    $('btn-likes').addEventListener('click', async () => {
-      if (!currentUser) return;
-      try {
-        const allInteractions = await data.getInteractionsByUser(currentUser.id) || [];
-        const myLikes = allInteractions.filter(i => i.type === 'like');
-        if (myLikes.length === 0) {
-          alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');
-          return;
-        }
-
-        const allMatches = await data.getMatchesByUser(currentUser.id) || [];
-        let msg = '💜 Personas que te gustaron:\n\n';
-
-        const profiles = await Promise.all(myLikes.map(l => data.getProfile(l.toId).catch(() => null)));
-        profiles.forEach((p, i) => {
-          if (!p) return;
-          const isMatch = allMatches.some(m => (m.user1Id === currentUser.id && m.user2Id === p.id) || (m.user1Id === p.id && m.user2Id === currentUser.id));
-          msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
-        });
-        msg += `\nTotal: ${myLikes.length} likes`;
-        alert(msg);
-      } catch(e) { alert('Error al cargar likes.'); }
-    });
-
-    // ==============================================================
-    //   BOTÓN CONFIGURACIÓN NUBE (en header)
-    // ==============================================================
-    //   INDICADOR DE CONEXIÓN
-    // ==============================================================
-    let connectionBadge = null;
-    function updateConnectionBadge() {
-      if (!connectionBadge) {
-        connectionBadge = document.createElement('span');
-        connectionBadge.style.cssText = 'font-size:14px;cursor:pointer;padding:4px;border-radius:50%;transition:.3s;';
-        connectionBadge.title = 'Estado de conexión — haz clic para más info';
-        const header = document.querySelector('.main-header .logo');
-        if (header) header.after(connectionBadge);
-      }
-      const isApi = data.isApiMode();
-      connectionBadge.textContent = isApi ? '🟢' : '🟡';
-      connectionBadge.onclick = showStatusModal;
-    }
-    // Llamar después de cada init
-    const origShowMain = showMainScreen;
-    showMainScreen = function() {
-      origShowMain.apply(this, arguments);
-      setTimeout(updateConnectionBadge, 100);
-    };
-
-    // ==============================================================
-    //   EDITAR PERFIL
-    // ==============================================================
-    $('btn-profile').addEventListener('click', () => {
-      if (!currentUser) return;
-      const u = currentUser;
-      editName.value = u.name;
-      editAge.value = u.age;
-      editGender.value = u.gender || 'Hombre';
-      editBio.value = u.bio || '';
-      editPhotoPreview.src = u.photo;
-      editPhotoUrl.value = '';
-      editPhotoFile.value = '';
-      editOverlay.classList.remove('hidden');
-    });
-
-    editCancel.addEventListener('click', () => editOverlay.classList.add('hidden'));
-    editOverlay.addEventListener('click', e => { if (e.target === editOverlay) editOverlay.classList.add('hidden'); });
-
-    editPhotoFile.addEventListener('change', function() {
-      const file = this.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) { editPhotoPreview.src = e.target.result; editPhotoUrl.value = ''; };
-      reader.readAsDataURL(file);
-    });
-
-    editPhotoUrl.addEventListener('input', function() {
-      const val = this.value.trim();
-      if (val) editPhotoPreview.src = val;
-    });
-
-    editForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!currentUser) return;
-
-      const name = editName.value.trim();
-      const age = parseInt(editAge.value, 10);
-      const gender = editGender.value;
-      const bio = editBio.value.trim();
-      let photo = editPhotoPreview.src;
-
-      if (!name) { alert('El nombre no puede estar vacío.'); return; }
-      if (!age || age < 18) { alert('Debes tener al menos 18 años.'); return; }
-
-      const urlVal = editPhotoUrl.value.trim();
-      if (urlVal) photo = urlVal;
-
-      try {
-        if (name !== currentUser.name) {
-          const dup = await data.getProfileByName(name);
-          if (dup) { alert('Ese nombre ya está en uso.'); return; }
-        }
-
-        const result = await data.updateProfile(currentUser.id, {
-          name, age, gender, bio: bio || 'Nuevo en Rumbadoo 💜', photo
-        });
-        currentUser = result.profile || result;
-        editOverlay.classList.add('hidden');
-        alert('💜 ¡Perfil actualizado correctamente!');
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-
-    // ==============================================================
-    //   TABS
-    // ==============================================================
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        const pane = document.getElementById(btn.dataset.tab + '-pane');
-        if (pane) pane.classList.add('active');
-        if (btn.dataset.tab === 'matches') await loadMatches();
-      });
-    });
-
-    // ==============================================================
-    //   ADMIN PANEL
-    // ==============================================================
-    async function showAdminPanel() {
-      authScreen.classList.add('hidden');
-      mainScreen.classList.add('hidden');
-      adminScreen.classList.remove('hidden');
-      await refreshAdminPanel();
-    }
-
-    async function refreshAdminPanel() {
-      try {
-        const [stats, profiles] = await Promise.all([
-          data.getAdminStats(),
-          data.getAllProfiles()
-        ]);
-
-        const users = (profiles || []).filter(p => p.role !== 'admin');
-
-        $('admin-stats').innerHTML = `
-          <div class="admin-stat-card"><div class="num">${stats.users}</div><div class="label">Usuarios</div></div>
-          <div class="admin-stat-card"><div class="num">${stats.matches}</div><div class="label">Matches</div></div>
-          <div class="admin-stat-card"><div class="num">${stats.interactions}</div><div class="label">Interacciones</div></div>
-        `;
-
-        const list = $('admin-profile-list');
-        list.innerHTML = '';
-
-        if (users.length === 0) {
-          list.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No hay usuarios.</p>';
-          return;
-        }
-
-        users.forEach(u => {
-          const div = document.createElement('div');
-          div.className = 'admin-profile-item';
-          div.innerHTML = `
-            <img src="${u.photo}" alt="${u.name}">
-            <div class="info">
-              <div class="name">${u.name}</div>
-              <div class="detail">${u.age || '?'} años · ${u.gender || '—'} · ${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ''}</div>
-            </div>
-            <button class="admin-del-btn" data-id="${u.id}">Eliminar</button>
-          `;
-          list.appendChild(div);
-          div.querySelector('.admin-del-btn').addEventListener('click', async () => {
-            if (!confirm(`¿Eliminar a ${u.name}?`)) return;
-            await data.adminDeleteProfile(u.id);
-            await refreshAdminPanel();
-          });
-        });
-      } catch(e) {
-        console.error('Error admin:', e);
-      }
-    }
-
-    adminClose.addEventListener('click', () => {
-      adminScreen.classList.add('hidden');
-      if (currentUser && currentUser.role === 'admin') {
-        currentUser = null;
-        localStorage.removeItem('rumbadoo_session');
-        showAuthScreen();
-      } else {
-        showMainScreen();
-      }
-    });
-
-    // ==============================================================
-    //   ARRANQUE
-    // ==============================================================
-    document.addEventListener('DOMContentLoaded', init);
-  </script>
-
+// ─── INICIAR ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',init);
+</script>
 </body>
 </html>
