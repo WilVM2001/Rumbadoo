@@ -1229,138 +1229,66 @@
     // ==============================================================
     //   CAPA 2: SupabaseDB (REST API en la nube)
     // ==============================================================
-    class SupabaseDB {
-      constructor() {
-        this.url = '';
-        this.key = '';
-        this.ready = false;
-      }
+    // ==============================================================
+    //   CAPA 2: APIDB — Conexión al servidor Express
+    // ==============================================================
+    class APIDB {
+      constructor() { this.base = window.location.origin + '/api'; }
 
-      configure(url, key) {
-        this.url = url.replace(/\/$/, '');
-        this.key = key;
-        this.ready = !!(url && key);
-        if (this.ready) {
-          localStorage.setItem('rumbadoo_supabase_url', url);
-          localStorage.setItem('rumbadoo_supabase_key', key);
-        }
-      }
-
-      loadConfig() {
-        const url = localStorage.getItem('rumbadoo_supabase_url');
-        const key = localStorage.getItem('rumbadoo_supabase_key');
-        if (url && key) this.configure(url, key);
-        return this.ready;
-      }
-
-      clearConfig() {
-        localStorage.removeItem('rumbadoo_supabase_url');
-        localStorage.removeItem('rumbadoo_supabase_key');
-        this.ready = false;
-      }
-
-      async fetch(method, table, opts = {}) {
-        if (!this.ready) throw new Error('Supabase no configurado.');
-        let url = `${this.url}/rest/v1/${table}`;
-        if (opts.query) url += '?' + opts.query;
-        if (opts.id) url += `?id=eq.${opts.id}&select=*`;
-
-        const headers = {
-          'apikey': this.key,
-          'Authorization': 'Bearer ' + this.key,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        };
-        if (opts.count) headers['Prefer'] = 'count=exact,return=representation';
-
-        const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
-        if (opts.count && res.status === 200) {
-          const count = parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
-          return { data: await res.json(), count };
-        }
+      async api(path, opts = {}) {
+        const res = await fetch(this.base + path, {
+          headers: { 'Content-Type': 'application/json', ...opts.headers },
+          ...opts
+        });
         if (!res.ok) {
           const txt = await res.text().catch(() => '');
-          throw new Error(`Supabase error ${res.status}: ${txt.slice(0,100)}`);
+          try { const j = JSON.parse(txt); throw new Error(j.error || 'Error del servidor'); }
+          catch(e) { if (e.message.includes('Error del servidor')) throw e; throw new Error('Error ' + res.status); }
         }
         return res.json();
       }
 
-      // ─── Perfiles ──────────────────────────────────────
+      async health() { try { await this.api('/health'); return true; } catch(e) { return false; } }
+
       async getProfile(id) {
-        const rows = await this.fetch('GET', 'profiles', { id: `eq.${id}` });
-        return rows?.[0] || null;
+        const d = await this.api('/profile/' + encodeURIComponent(id));
+        return d.id ? d : null;
       }
       async getProfileByName(name) {
-        const rows = await this.fetch('GET', `profiles?name=eq.${encodeURIComponent(name)}&select=*`);
-        return rows?.[0] || null;
+        const all = await this.api('/profiles');
+        return all.find(p => p.name === name) || null;
       }
       async getAllProfiles(excludeId) {
-        let q = 'select=*';
-        if (excludeId) q += `&id=neq.${excludeId}&role=neq.admin`;
-        else q += '&role=neq.admin';
-        return this.fetch('GET', `profiles?${q}`);
+        return this.api('/profiles?exclude=' + encodeURIComponent(excludeId || ''));
       }
       async createProfile(data) {
-        data.created_at = new Date().toISOString();
-        const rows = await this.fetch('POST', 'profiles', { body: data });
-        return rows?.[0] || data;
+        return this.api('/register', { method: 'POST', body: JSON.stringify(data) });
       }
       async updateProfile(id, data) {
-        const rows = await this.fetch('PATCH', `profiles?id=eq.${id}`, { body: data });
-        return rows?.[0] || data;
+        return this.api('/profile/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(data) });
       }
-      async deleteProfile(id) {
-        await this.fetch('DELETE', `profiles?id=eq.${id}`);
-      }
-
-      // ─── Interacciones ─────────────────────────────────
+      async deleteProfile(id) { return this.adminDeleteProfile(id); }
       async getInteractionsByUser(userId) {
-        return this.fetch('GET', `interactions?fromId=eq.${encodeURIComponent(userId)}&order=createdAt.desc`);
+        return this.api('/interactions/' + encodeURIComponent(userId));
       }
       async createInteraction(fromId, toId, type) {
-        const body = { id: genId(), fromId, toId, type, created_at: new Date().toISOString() };
-        await this.fetch('POST', 'interactions', { body });
-
-        let match = null;
-        if (type === 'like') {
-          const reciprocal = await this.fetch('GET', `interactions?fromId=eq.${encodeURIComponent(toId)}&toId=eq.${encodeURIComponent(fromId)}&type=eq.like`);
-          if (reciprocal && reciprocal.length > 0) {
-            const existing = await this.fetch('GET', `matches?or=(user1Id.eq.${encodeURIComponent(fromId)},user2Id.eq.${encodeURIComponent(fromId)})`);
-            const already = existing.some(m =>
-              (m.user1Id === fromId && m.user2Id === toId) || (m.user1Id === toId && m.user2Id === fromId)
-            );
-            if (!already) {
-              const matchBody = { id: genId(), user1Id: fromId, user2Id: toId, created_at: new Date().toISOString() };
-              await this.fetch('POST', 'matches', { body: matchBody });
-              match = matchBody;
-            }
-          }
-        }
-        return { interactionId: body.id, match };
+        return this.api('/interactions', {
+          method: 'POST',
+          body: JSON.stringify({ fromId, toId, type })
+        });
       }
-
-      // ─── Matches ───────────────────────────────────────
       async getMatchesByUser(userId) {
-        return this.fetch('GET', `matches?or=(user1Id.eq.${encodeURIComponent(userId)},user2Id.eq.${encodeURIComponent(userId)})&order=createdAt.desc`);
+        return this.api('/matches/' + encodeURIComponent(userId));
       }
-
-      // ─── Admin ─────────────────────────────────────────
       async getAdminStats() {
-        const [users, matches, interactions] = await Promise.all([
-          this.fetch('GET', `profiles?role=neq.admin&select=id`, { count: true }),
-          this.fetch('GET', `matches?select=id`, { count: true }),
-          this.fetch('GET', `interactions?select=id`, { count: true })
+        const [stats, profiles] = await Promise.all([
+          this.api('/admin/stats'),
+          this.api('/profiles')
         ]);
-        return {
-          users: typeof users === 'object' && users.count !== undefined ? users.count : (Array.isArray(users) ? users.length : 0),
-          matches: typeof matches === 'object' && matches.count !== undefined ? matches.count : (Array.isArray(matches) ? matches.length : 0),
-          interactions: typeof interactions === 'object' && interactions.count !== undefined ? interactions.count : (Array.isArray(interactions) ? interactions.length : 0)
-        };
+        return { ...stats, profiles };
       }
       async adminDeleteProfile(id) {
-        await this.fetch('DELETE', `interactions?or=(fromId.eq.${encodeURIComponent(id)},toId.eq.${encodeURIComponent(id)})`);
-        await this.fetch('DELETE', `matches?or=(user1Id.eq.${encodeURIComponent(id)},user2Id.eq.${encodeURIComponent(id)})`);
-        await this.fetch('DELETE', `profiles?id=eq.${encodeURIComponent(id)}`);
+        await this.api('/admin/profile/' + encodeURIComponent(id), { method: 'DELETE' });
       }
     }
 
@@ -1368,17 +1296,18 @@
     //   CAPA 3: Data Layer Unificado
     // ==============================================================
     const data = {
-      mode: 'indexeddb',  // 'indexeddb' | 'supabase'
-      db: null,
-      mini: null,
-      supabase: null,
+      mode: 'api',      // 'api' | 'indexeddb'
+      backend: null,     // APIDB instance
+      mini: null,        // MiniSQL instance (fallback)
 
       async init() {
-        this.supabase = new SupabaseDB();
-        if (this.supabase.loadConfig()) {
-          this.mode = 'supabase';
-          return;
-        }
+        // Intentar conectar al servidor primero
+        this.backend = new APIDB();
+        const serverUp = await this.backend.health();
+        if (serverUp) { this.mode = 'api'; return; }
+
+        // Si no hay servidor, usar IndexedDB
+        console.log('💜 Servidor no disponible, usando modo local (IndexedDB)');
         this.mini = new MiniSQL('RumbadooDB', 1);
         const stores = [
           { name: 'profiles', key: 'id', indexes: [{ name: 'by_name', key: 'name' }] },
@@ -1387,81 +1316,74 @@
         ];
         await this.mini.open(stores);
 
-        // Crear admin por defecto en IndexedDB
         const admins = await this.mini.select('profiles', { index: 'by_name', value: '__admin__' });
         if (!admins || admins.length === 0) {
           await this.mini.insert('profiles', {
-            id: 'admin_' + genId(),
-            name: '__admin__',
-            password: hashPass('admin123'),
-            role: 'admin',
+            id: 'admin_' + genId(), name: '__admin__',
+            password: hashPass('admin123'), role: 'admin',
             createdAt: new Date().toISOString()
           });
         }
         this.mode = 'indexeddb';
       },
 
-      // ─── Perfiles ──────────────────────────────────────
+      isApiMode() { return this.mode === 'api'; },
+
       async getProfile(id) {
-        if (this.mode === 'supabase') return this.supabase.getProfile(id);
+        if (this.mode === 'api') return this.backend.getProfile(id);
         return this.mini.select('profiles', { id });
       },
       async getProfileByName(name) {
-        if (this.mode === 'supabase') return this.supabase.getProfileByName(name);
+        if (this.mode === 'api') return this.backend.getProfileByName(name);
         const rows = await this.mini.select('profiles', { index: 'by_name', value: name });
         return rows?.[0] || null;
       },
       async getAllProfiles(excludeId) {
-        if (this.mode === 'supabase') return this.supabase.getAllProfiles(excludeId);
+        if (this.mode === 'api') return this.backend.getAllProfiles(excludeId);
         const all = await this.mini.selectAll('profiles');
         return (all || []).filter(p => p.id !== excludeId && p.role !== 'admin');
       },
       async createProfile(data) {
-        if (this.mode === 'supabase') return this.supabase.createProfile(data);
+        if (this.mode === 'api') {
+          const res = await this.backend.createProfile(data);
+          return res.profile || data;
+        }
         await this.mini.insert('profiles', data);
         return data;
       },
       async updateProfile(id, data) {
-        if (this.mode === 'supabase') return this.supabase.updateProfile(id, data);
+        if (this.mode === 'api') {
+          const res = await this.backend.updateProfile(id, data);
+          return res.profile || data;
+        }
         data.id = id;
         await this.mini.update('profiles', data);
         return data;
       },
       async deleteProfile(id) {
-        if (this.mode === 'supabase') return this.supabase.deleteProfile(id);
-        // En IndexedDB no hay CASCADE, limpiar manualmente
+        if (this.mode === 'api') return this.backend.deleteProfile(id);
         const allI = await this.mini.selectAll('interactions') || [];
-        for (const i of allI) {
-          if (i.fromId === id || i.toId === id) await this.mini.delete('interactions', i.id);
-        }
+        for (const i of allI) { if (i.fromId === id || i.toId === id) await this.mini.delete('interactions', i.id); }
         const allM = await this.mini.selectAll('matches') || [];
-        for (const m of allM) {
-          if (m.user1Id === id || m.user2Id === id) await this.mini.delete('matches', m.id);
-        }
+        for (const m of allM) { if (m.user1Id === id || m.user2Id === id) await this.mini.delete('matches', m.id); }
         await this.mini.delete('profiles', id);
       },
-
-      // ─── Interacciones ─────────────────────────────────
       async getInteractionsByUser(userId) {
-        if (this.mode === 'supabase') return this.supabase.getInteractionsByUser(userId);
+        if (this.mode === 'api') return this.backend.getInteractionsByUser(userId);
         const all = await this.mini.selectAll('interactions') || [];
         return all.filter(i => i.fromId === userId);
       },
       async createInteraction(fromId, toId, type) {
-        if (this.mode === 'supabase') return this.supabase.createInteraction(fromId, toId, type);
-
+        if (this.mode === 'api') return this.backend.createInteraction(fromId, toId, type);
         const id = genId();
         const interaction = { id, fromId, toId, type, createdAt: new Date().toISOString() };
         await this.mini.insert('interactions', interaction);
-
         let match = null;
         if (type === 'like') {
           const theirLikes = await this.mini.select('interactions', { index: 'by_from', value: toId }) || [];
-          const theyLikeMe = theirLikes.some(i => i.toId === fromId && i.type === 'like');
-          if (theyLikeMe) {
+          if (theirLikes.some(i => i.toId === fromId && i.type === 'like')) {
             const existing = await this.mini.selectAll('matches') || [];
-            const already = existing.some(m => (m.user1Id === fromId && m.user2Id === toId) || (m.user1Id === toId && m.user2Id === fromId));
-            if (!already) {
+            if (!existing.some(m => (m.user1Id === fromId && m.user2Id === toId) || (m.user1Id === toId && m.user2Id === fromId))) {
               const mid = genId();
               match = { id: mid, user1Id: fromId, user2Id: toId, createdAt: new Date().toISOString() };
               await this.mini.insert('matches', match);
@@ -1470,41 +1392,22 @@
         }
         return { interactionId: id, match };
       },
-
-      // ─── Matches ───────────────────────────────────────
       async getMatchesByUser(userId) {
-        if (this.mode === 'supabase') return this.supabase.getMatchesByUser(userId);
+        if (this.mode === 'api') return this.backend.getMatchesByUser(userId);
         const all = await this.mini.selectAll('matches') || [];
         return all.filter(m => m.user1Id === userId || m.user2Id === userId);
       },
-
-      // ─── Admin ─────────────────────────────────────────
       async getAdminStats() {
-        if (this.mode === 'supabase') return this.supabase.getAdminStats();
+        if (this.mode === 'api') return this.backend.getAdminStats();
         const allProfiles = await this.mini.selectAll('profiles') || [];
         const allMatches = await this.mini.selectAll('matches') || [];
         const allInteractions = await this.mini.selectAll('interactions') || [];
-        return {
-          users: allProfiles.filter(p => p.role !== 'admin').length,
-          matches: allMatches.length,
-          interactions: allInteractions.length
-        };
+        return { users: allProfiles.filter(p => p.role !== 'admin').length, matches: allMatches.length, interactions: allInteractions.length };
       },
       async adminDeleteProfile(id) {
-        if (this.mode === 'supabase') return this.supabase.adminDeleteProfile(id);
+        if (this.mode === 'api') return this.backend.adminDeleteProfile(id);
         return this.deleteProfile(id);
-      },
-
-      // ─── Configuración ─────────────────────────────────
-      configureSupabase(url, key) {
-        this.supabase.configure(url, key);
-        this.mode = 'supabase';
-      },
-      clearSupabase() {
-        this.supabase.clearConfig();
-        this.mode = 'indexeddb';
-      },
-      isSupabaseReady() { return this.supabase.ready; }
+      }
     };
 
     // ==============================================================
@@ -1554,29 +1457,27 @@
     // ==============================================================
     //   CONFIGURACIÓN SUPABASE
     // ==============================================================
-    function showConfigModal() {
+    function showStatusModal() {
+      const isApi = data.isApiMode();
+      const color = isApi ? '#22c55e' : '#a1a1aa';
+      const icon = isApi ? '🟢' : '🟡';
+      const title = isApi ? 'Servidor conectado' : 'Modo local';
+      const desc = isApi
+        ? 'Los datos se guardan en el servidor y están disponibles desde cualquier dispositivo.'
+        : 'No hay servidor disponible. Los datos se guardan solo en este navegador (IndexedDB).';
+      const extra = isApi
+        ? `<p style="font-size:12px;color:#71717a;margin-top:8px;">Servidor: ${window.location.host}</p>`
+        : `<p style="font-size:12px;color:#71717a;margin-top:8px;">Para compartir datos entre dispositivos, ejecuta el servidor: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;">node server.js</code></p>`;
+
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(45,27,105,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease;';
       overlay.innerHTML = `
-        <div style="background:white;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(74,44,138,.25);animation:bounceIn .4s ease backwards;">
-          <div style="text-align:center;font-size:48px;margin-bottom:4px;">☁️</div>
-          <h2 style="font-size:20px;font-weight:800;color:#4a2c8a;text-align:center;margin-bottom:4px;">Conectar a la nube</h2>
-          <p style="font-size:13px;color:#71717a;text-align:center;margin-bottom:20px;">
-            Todos los datos se sincronizarán entre dispositivos.
-            ${data.mode === 'indexeddb' ? 'Ahora estás en <strong>modo local</strong> (IndexedDB).' : 'Ya estás conectado a Supabase.'}
-          </p>
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <label style="font-size:13px;font-weight:700;color:#4a2c8a;">URL del proyecto Supabase</label>
-            <input id="cfg-url" style="padding:12px 16px;border:2px solid #ede9fe;border-radius:12px;font-family:Nunito,sans-serif;font-size:14px;outline:none;" placeholder="https://xxxxx.supabase.co" value="${data.supabase.url || ''}">
-            <label style="font-size:13px;font-weight:700;color:#4a2c8a;">Anon Key (pública)</label>
-            <input id="cfg-key" style="padding:12px 16px;border:2px solid #ede9fe;border-radius:12px;font-family:Nunito,sans-serif;font-size:14px;outline:none;" placeholder="eyJhbGciOi..." value="${data.supabase.key || ''}">
-            <div style="display:flex;gap:10px;margin-top:4px;">
-              <button id="cfg-cancel" style="flex:1;padding:14px;border:2px solid #ede9fe;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:#71717a;background:white;cursor:pointer;">Cancelar</button>
-              ${data.mode === 'supabase' ? `<button id="cfg-clear" style="flex:1;padding:14px;border:none;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:white;background:#f43f5e;cursor:pointer;">Desconectar</button>` : ''}
-              <button id="cfg-save" style="flex:1;padding:14px;border:none;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:white;background:linear-gradient(135deg,#8b5cf6,#7c3aed);cursor:pointer;box-shadow:0 4px 16px rgba(139,92,246,.35);">Conectar</button>
-            </div>
-            <p id="cfg-error" style="font-size:12px;color:#f43f5e;text-align:center;min-height:18px;"></p>
-          </div>
+        <div style="background:white;border-radius:20px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(74,44,138,.25);animation:bounceIn .4s ease backwards;text-align:center;">
+          <div style="font-size:48px;margin-bottom:4px;">${icon}</div>
+          <h2 style="font-size:20px;font-weight:800;color:#4a2c8a;margin-bottom:4px;">${title}</h2>
+          <p style="font-size:13px;color:#71717a;margin-bottom:16px;">${desc}</p>
+          ${extra}
+          <button id="st-close" style="margin-top:16px;padding:12px 32px;border:none;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:white;background:linear-gradient(135deg,#8b5cf6,#7c3aed);cursor:pointer;">Cerrar</button>
         </div>
       `;
       document.body.appendChild(overlay);
@@ -1585,42 +1486,8 @@
       animStyle.textContent = '@keyframes bounceIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}';
       document.head.appendChild(animStyle);
 
-      overlay.querySelector('#cfg-cancel').onclick = () => overlay.remove();
-      overlay.querySelector('#cfg-cancel').onclick = () => { overlay.remove(); animStyle.remove(); };
-      overlay.querySelector('#cfg-save').onclick = async () => {
-        const url = overlay.querySelector('#cfg-url').value.trim();
-        const key = overlay.querySelector('#cfg-key').value.trim();
-        const err = overlay.querySelector('#cfg-error');
-        if (!url || !key) { err.textContent = 'Completa ambos campos.'; return; }
-        if (!url.startsWith('https://')) { err.textContent = 'La URL debe empezar con https://'; return; }
-
-        // Probar conexión
-        try {
-          const testSupabase = new SupabaseDB();
-          testSupabase.configure(url, key);
-          await testSupabase.fetch('GET', 'profiles?select=id&limit=1');
-        } catch (e) {
-          err.textContent = 'No se pudo conectar. Verifica los datos.';
-          return;
-        }
-
-        data.configureSupabase(url, key);
-        overlay.remove();
-        animStyle.remove();
-        alert('☁️ ¡Conectado a Supabase! Los datos se sincronizarán entre dispositivos.\n\nRecarga la página para aplicar los cambios.');
-        location.reload();
-      };
-
-      const clearBtn = overlay.querySelector('#cfg-clear');
-      if (clearBtn) {
-        clearBtn.onclick = () => {
-          if (!confirm('¿Desconectar Supabase? Los datos locales no se perderán.')) return;
-          data.clearSupabase();
-          overlay.remove();
-          animStyle.remove();
-          location.reload();
-        };
-      }
+      overlay.querySelector('#st-close').onclick = () => { overlay.remove(); animStyle.remove(); };
+      overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); animStyle.remove(); } };
     }
 
     // ==============================================================
@@ -2078,19 +1945,27 @@
     // ==============================================================
     //   BOTÓN CONFIGURACIÓN NUBE (en header)
     // ==============================================================
-    // Añadir botón de nube al header
-    (function addCloudBtn() {
-      const headerActions = document.querySelector('.header-actions');
-      if (!headerActions) return;
-      const btn = document.createElement('button');
-      btn.className = 'header-btn';
-      btn.id = 'btn-cloud';
-      btn.title = 'Configurar nube';
-      btn.textContent = '☁️';
-      btn.style.fontSize = '16px';
-      headerActions.insertBefore(btn, headerActions.firstChild);
-      btn.addEventListener('click', showConfigModal);
-    })();
+    //   INDICADOR DE CONEXIÓN
+    // ==============================================================
+    let connectionBadge = null;
+    function updateConnectionBadge() {
+      if (!connectionBadge) {
+        connectionBadge = document.createElement('span');
+        connectionBadge.style.cssText = 'font-size:14px;cursor:pointer;padding:4px;border-radius:50%;transition:.3s;';
+        connectionBadge.title = 'Estado de conexión — haz clic para más info';
+        const header = document.querySelector('.main-header .logo');
+        if (header) header.after(connectionBadge);
+      }
+      const isApi = data.isApiMode();
+      connectionBadge.textContent = isApi ? '🟢' : '🟡';
+      connectionBadge.onclick = showStatusModal;
+    }
+    // Llamar después de cada init
+    const origShowMain = showMainScreen;
+    showMainScreen = function() {
+      origShowMain.apply(this, arguments);
+      setTimeout(updateConnectionBadge, 100);
+    };
 
     // ==============================================================
     //   EDITAR PERFIL
