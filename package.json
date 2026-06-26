@@ -1,13 +1,12 @@
 {
   "name": "rumbadoo",
   "version": "1.0.0",
-  "description": "💜 Rumbadoo - App de citas full-stack",
-  "main": "server.js",
+  "description": "💜 Rumbadoo - App de citas (Vercel + Turso)",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "dev": "node server.js"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "sql.js": "^1.11.0"
+    "@libsql/client": "^0.14.0"
   }
 }
