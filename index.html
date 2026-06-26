@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rumbadoo - Encuentra tu ritmo</title>
+  <style>
+    /* ============================================================
+       RUMBADOO — Estilos globales
+       ============================================================ */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    :root {
+      --purple-900: #2d1b69;
+      --purple-800: #4a2c8a;
+      --purple-700: #6b3fa0;
+      --purple-600: #8b5cf6;
+      --purple-500: #a78bfa;
+      --purple-400: #c4b5fd;
+      --purple-300: #ddd6fe;
+      --purple-200: #ede9fe;
+      --purple-100: #f5f3ff;
+      --lavender:    #e6d5f5;
+      --lilac:       #d8b4fe;
+      --violet:      #7c3aed;
+      --pink-accent: #ec4899;
+      --rose:        #f43f5e;
+      --gold:        #fbbf24;
+      --white:       #ffffff;
+      --gray-50:     #fafafa;
+      --gray-100:    #f4f4f5;
+      --gray-200:    #e4e4e7;
+      --gray-300:    #d4d4d8;
+      --gray-400:    #a1a1aa;
+      --gray-500:    #71717a;
+      --gray-600:    #52525b;
+      --gray-700:    #3f3f46;
+      --gray-800:    #27272a;
+      --gray-900:    #18181b;
+      --shadow-sm:   0 1px 2px rgba(0,0,0,.05);
+      --shadow:      0 4px 24px rgba(74,44,138,.12);
+      --shadow-lg:   0 8px 40px rgba(74,44,138,.18);
+      --shadow-xl:   0 20px 60px rgba(74,44,138,.25);
+      --radius:      20px;
+      --radius-sm:   12px;
+      --radius-full: 9999px;
+      --transition:  0.3s cubic-bezier(.4,0,.2,1);
+      --font:        'Nunito', system-ui, -apple-system, sans-serif;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+      height:100%;
+      font-family:var(--font);
+      background: linear-gradient(135deg, #2d1b69 0%, #4a2c8a 30%, #6b3fa0 60%, #8b5cf6 100%);
+      color:var(--gray-900);
+      overflow:hidden;
+    }
+
+    /* ── Patrón decorativo de fondo ── */
+    body::before {
+      content:'';
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(139,92,246,.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(196,181,253,.12) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(216,180,254,.08) 0%, transparent 60%);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--purple-400); border-radius:3px; }
+
+    /* ── App shell ── */
+    #app {
+      position:relative;
+      z-index:1;
+      width:100%;
+      max-width:480px;
+      height:100vh;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      background:var(--white);
+      box-shadow:var(--shadow-xl);
+      overflow:hidden;
+    }
+
+    /* ============================================================
+       PANTALLA DE REGISTRO
+       ============================================================ */
+    #register-screen {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:32px 24px;
+      background: linear-gradient(160deg, var(--purple-100) 0%, var(--white) 50%, var(--purple-200) 100%);
+      overflow-y:auto;
+    }
+    #register-screen.hidden { display:none; }
+
+    .register-logo {
+      font-size:48px;
+      font-weight:900;
+      background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin-bottom:4px;
+      letter-spacing:-1px;
+    }
+    .register-sub {
+      color:var(--gray-500);
+      font-size:14px;
+      margin-bottom:28px;
+      font-weight:600;
+    }
+
+    #register-form {
+      width:100%;
+      max-width:360px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    #register-form label {
+      font-size:13px;
+      font-weight:700;
+      color:var(--purple-800);
+      margin-bottom:-8px;
+    }
+    #register-form input,
+    #register-form select,
+    #register-form textarea {
+      width:100%;
+      padding:12px 16px;
+      border:2px solid var(--purple-200);
+      border-radius:var(--radius-sm);
+      font-family:var(--font);
+      font-size:15px;
+      background:var(--white);
+      transition:var(--transition);
+      outline:none;
+    }
+    #register-form input:focus,
+    #register-form select:focus,
+    #register-form textarea:focus {
+      border-color:var(--purple-500);
+      box-shadow:0 0 0 4px rgba(139,92,246,.15);
+    }
+    #register-form textarea {
+      resize:vertical;
+      min-height:64px;
+    }
+
+    .btn-primary {
+      padding:14px 24px;
+      border:none;
+      border-radius:var(--radius-full);
+      font-family:var(--font);
+      font-size:16px;
+      font-weight:800;
+      color:var(--white);
+      background: linear-gradient(135deg, var(--purple-600), var(--violet));
+      cursor:pointer;
+      transition:var(--transition);
+      box-shadow:0 4px 16px rgba(139,92,246,.35);
+      letter-spacing:0.3px;
+    }
+    .btn-primary:hover {
+      transform:translateY(-2px);
+      box-shadow:0 6px 24px rgba(139,92,246,.45);
+    }
+    .btn-primary:active {
+      transform:translateY(0);
+    }
+
+    .avatar-preview-wrap {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-top:4px;
+    }
+    .avatar-preview-wrap img {
+      width:56px; height:56px;
+      border-radius:50%;
+      object-fit:cover;
+      border:3px solid var(--purple-300);
+      background:var(--purple-100);
+    }
+
+    /* ============================================================
+       PANTALLA PRINCIPAL (con tabs)
+       ============================================================ */
+    #main-screen {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      background: linear-gradient(180deg, var(--purple-50, #faf5ff) 0%, var(--white) 100%);
+    }
+    #main-screen.hidden { display:none; }
+
+    /* ── Header ── */
+    .main-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:16px 20px 8px;
+      background:rgba(255,255,255,.85);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      position:relative;
+      z-index:10;
+    }
+    .main-header .logo {
+      font-size:22px;
+      font-weight:900;
+      background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    .header-actions {
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .header-btn {
+      background:none;
+      border:none;
+      font-size:20px;
+      cursor:pointer;
+      padding:8px;
+      border-radius:50%;
+      transition:var(--transition);
+      position:relative;
+      color:var(--gray-600);
+    }
+    .header-btn:hover { background:var(--purple-100); color:var(--purple-700); }
+    .badge {
+      position:absolute;
+      top:0; right:0;
+      background:var(--rose);
+      color:var(--white);
+      font-size:10px;
+      font-weight:800;
+      min-width:18px; height:18px;
+      border-radius:var(--radius-full);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0 4px;
+      transform:translate(4px,-4px);
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display:flex;
+      background:rgba(255,255,255,.85);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--purple-100);
+      position:relative;
+      z-index:10;
+      padding:0 8px;
+    }
+    .tab-btn {
+      flex:1;
+      padding:10px 8px 12px;
+      background:none;
+      border:none;
+      font-family:var(--font);
+      font-size:13px;
+      font-weight:700;
+      color:var(--gray-400);
+      cursor:pointer;
+      transition:var(--transition);
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+    }
+    .tab-btn .tab-icon { font-size:18px; }
+    .tab-btn.active { color:var(--purple-700); }
+    .tab-btn.active::after {
+      content:'';
+      position:absolute;
+      bottom:0;
+      left:50%;
+      transform:translateX(-50%);
+      width:32px;
+      height:3px;
+      background: linear-gradient(90deg, var(--purple-500), var(--violet));
+      border-radius:3px 3px 0 0;
+    }
+    .tab-btn:hover { color:var(--purple-600); }
+
+    /* ── Contenido de tabs ── */
+    .tab-content {
+      flex:1;
+      overflow:hidden;
+      position:relative;
+    }
+    .tab-pane {
+      position:absolute;
+      inset:0;
+      overflow-y:auto;
+      padding:16px;
+      display:none;
+    }
+    .tab-pane.active { display:block; }
+
+    /* ============================================================
+       TAB: DESCUBRIR (tarjetas)
+       ============================================================ */
+    #discover-pane {
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+    }
+    #discover-pane.active {
+      display:flex;
+    }
+
+    .card-stack {
+      position:relative;
+      width:100%;
+      max-width:400px;
+      height:480px;
+      margin:12px auto 8px;
+    }
+
+    .profile-card {
+      position:absolute;
+      width:100%;
+      height:100%;
+      border-radius:var(--radius);
+      overflow:hidden;
+      background:var(--white);
+      box-shadow:var(--shadow-lg);
+      transition:transform 0.35s ease, opacity 0.35s ease;
+      cursor:grab;
+      user-select:none;
+      touch-action:none;
+    }
+    .profile-card.swiping {
+      transition:none;
+      cursor:grabbing;
+    }
+    .profile-card.dismissed-left {
+      transform:translateX(-140%) rotate(-24deg);
+      opacity:0;
+      transition:transform 0.5s ease, opacity 0.5s ease;
+    }
+    .profile-card.dismissed-right {
+      transform:translateX(140%) rotate(24deg);
+      opacity:0;
+      transition:transform 0.5s ease, opacity 0.5s ease;
+    }
+
+    .profile-card .card-bg {
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .profile-card .card-overlay {
+      position:absolute;
+      inset:0;
+      background: linear-gradient(transparent 50%, rgba(0,0,0,.7));
+    }
+
+    .profile-card .card-info {
+      position:absolute;
+      bottom:0;
+      left:0;
+      right:0;
+      padding:24px 20px 20px;
+      color:var(--white);
+    }
+    .profile-card .card-name {
+      font-size:26px;
+      font-weight:800;
+      letter-spacing:-0.5px;
+    }
+    .profile-card .card-age {
+      font-weight:600;
+      font-size:20px;
+      opacity:.9;
+    }
+    .profile-card .card-bio {
+      font-size:14px;
+      font-weight:400;
+      opacity:.85;
+      margin-top:4px;
+      line-height:1.4;
+    }
+    .profile-card .card-gender {
+      display:inline-block;
+      font-size:12px;
+      font-weight:700;
+      background:rgba(255,255,255,.2);
+      backdrop-filter:blur(4px);
+      padding:2px 12px;
+      border-radius:var(--radius-full);
+      margin-top:6px;
+    }
+
+    /* ── Indicadores de like/pass ── */
+    .swipe-indicator {
+      position:absolute;
+      top:32px;
+      padding:8px 20px;
+      border-radius:var(--radius-sm);
+      font-size:28px;
+      font-weight:900;
+      opacity:0;
+      transform:rotate(-16deg);
+      pointer-events:none;
+      transition:opacity 0.15s;
+      z-index:5;
+    }
+    .swipe-indicator.like {
+      left:24px;
+      color:var(--rose);
+      border:4px solid var(--rose);
+      text-shadow:0 2px 8px rgba(0,0,0,.2);
+    }
+    .swipe-indicator.nope {
+      right:24px;
+      color:var(--gray-400);
+      border:4px solid var(--gray-400);
+      text-shadow:0 2px 8px rgba(0,0,0,.2);
+    }
+    .swipe-indicator.show { opacity:1; }
+
+    /* ── Botones de acción ── */
+    .card-actions {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:24px;
+      padding:8px 0 16px;
+    }
+    .action-btn {
+      width:60px; height:60px;
+      border-radius:50%;
+      border:none;
+      font-size:28px;
+      cursor:pointer;
+      transition:var(--transition);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:var(--shadow);
+      background:var(--white);
+    }
+    .action-btn:hover { transform:scale(1.1); }
+    .action-btn:active { transform:scale(.9); }
+    .action-btn.pass {
+      color:var(--gray-400);
+      border:2px solid var(--gray-200);
+    }
+    .action-btn.pass:hover {
+      border-color:var(--gray-400);
+      box-shadow:0 4px 16px rgba(0,0,0,.1);
+    }
+    .action-btn.like {
+      color:var(--rose);
+      border:2px solid #fecdd3;
+    }
+    .action-btn.like:hover {
+      background:#fff1f2;
+      border-color:var(--rose);
+      box-shadow:0 4px 20px rgba(244,63,94,.25);
+    }
+    .action-btn.super {
+      color:var(--gold);
+      border:2px solid #fef3c7;
+      font-size:22px;
+    }
+    .action-btn.super:hover {
+      background:#fffbeb;
+      border-color:var(--gold);
+      box-shadow:0 4px 20px rgba(251,191,36,.25);
+    }
+
+    /* ── Sin más perfiles ── */
+    .no-more {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:40px 24px;
+      color:var(--gray-500);
+    }
+    .no-more .emoji-big { font-size:64px; margin-bottom:12px; }
+    .no-more h3 { font-size:20px; font-weight:800; color:var(--purple-700); margin-bottom:4px; }
+    .no-more p { font-size:14px; }
+
+    /* ============================================================
+       TAB: MATCHES
+       ============================================================ */
+    #matches-pane .section-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:16px;
+    }
+    #matches-pane .section-header h2 {
+      font-size:20px;
+      font-weight:800;
+      color:var(--purple-800);
+    }
+    .match-count {
+      background: var(--purple-100);
+      color: var(--purple-700);
+      padding: 2px 14px;
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .matches-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+      gap:12px;
+    }
+    .match-card {
+      background:var(--white);
+      border-radius:var(--radius-sm);
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      transition:var(--transition);
+      text-align:center;
+      padding-bottom:12px;
+      animation:fadeUp 0.4s ease backwards;
+      border:2px solid transparent;
+    }
+    .match-card:hover {
+      transform:translateY(-3px);
+      box-shadow:var(--shadow-lg);
+      border-color:var(--purple-300);
+    }
+    .match-card img {
+      width:100%;
+      height:140px;
+      object-fit:cover;
+      display:block;
+      background:var(--purple-100);
+    }
+    .match-card .match-name {
+      font-weight:700;
+      font-size:14px;
+      margin-top:8px;
+      color:var(--gray-800);
+    }
+    .match-card .match-age {
+      font-size:12px;
+      color:var(--gray-500);
+      font-weight:600;
+    }
+
+    .empty-state {
+      text-align:center;
+      padding:60px 24px;
+      color:var(--gray-400);
+    }
+    .empty-state .emoji-big { font-size:56px; margin-bottom:8px; }
+    .empty-state h3 { font-weight:700; font-size:18px; color:var(--gray-500); }
+
+    /* ============================================================
+       TAB: LIKES
+       ============================================================ */
+    .likes-list {
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .like-item {
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:12px;
+      background:var(--white);
+      border-radius:var(--radius-sm);
+      box-shadow:var(--shadow-sm);
+      transition:var(--transition);
+      animation:fadeUp 0.3s ease backwards;
+    }
+    .like-item:hover {
+      box-shadow:var(--shadow);
+    }
+    .like-item img {
+      width:48px; height:48px;
+      border-radius:50%;
+      object-fit:cover;
+      border:2px solid var(--purple-200);
+      flex-shrink:0;
+    }
+    .like-item .like-info {
+      flex:1;
+      min-width:0;
+    }
+    .like-item .like-info .name {
+      font-weight:700;
+      font-size:15px;
+      color:var(--gray-800);
+    }
+    .like-item .like-info .age {
+      font-size:13px;
+      color:var(--gray-500);
+      font-weight:600;
+    }
+    .like-item .like-status {
+      font-size:12px;
+      font-weight:700;
+      padding:4px 12px;
+      border-radius:var(--radius-full);
+    }
+    .like-item .like-status.mutual {
+      background:#fce7f3;
+      color:var(--pink-accent);
+    }
+    .like-item .like-status.pending {
+      background:var(--purple-100);
+      color:var(--purple-700);
+    }
+
+    /* ============================================================
+       MODAL DE MATCH
+       ============================================================ */
+    .match-modal-overlay {
+      position:fixed;
+      inset:0;
+      z-index:1000;
+      background:rgba(45,27,105,.7);
+      backdrop-filter:blur(8px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      animation:fadeIn 0.3s ease;
+      padding:20px;
+    }
+    .match-modal-overlay.hidden { display:none; }
+
+    .match-modal {
+      background:var(--white);
+      border-radius:var(--radius);
+      padding:40px 32px 32px;
+      text-align:center;
+      max-width:400px;
+      width:100%;
+      box-shadow:var(--shadow-xl);
+      animation:bounceIn 0.5s ease backwards;
+      position:relative;
+      overflow:hidden;
+    }
+    .match-modal::before {
+      content:'';
+      position:absolute;
+      top:0; left:0; right:0;
+      height:4px;
+      background: linear-gradient(90deg, var(--purple-500), var(--pink-accent), var(--gold), var(--pink-accent), var(--purple-500));
+      background-size:200% 100%;
+      animation:shimmer 2s linear infinite;
+    }
+    .match-modal .match-emoji {
+      font-size:72px;
+      animation:heartBeat 1s ease infinite;
+      display:block;
+      margin-bottom:4px;
+    }
+    .match-modal h2 {
+      font-size:32px;
+      font-weight:900;
+      background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin-bottom:4px;
+    }
+    .match-modal p {
+      color:var(--gray-500);
+      font-weight:600;
+      margin-bottom:20px;
+    }
+    .match-modal .match-profiles {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+      margin-bottom:24px;
+    }
+    .match-modal .match-profiles img {
+      width:80px; height:80px;
+      border-radius:50%;
+      object-fit:cover;
+      border:3px solid var(--purple-300);
+    }
+    .match-modal .match-profiles .heart-icon {
+      font-size:32px;
+      color:var(--rose);
+    }
+
+    /* ============================================================
+       ANIMACIONES
+       ============================================================ */
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes bounceIn {
+      0%{opacity:0;transform:scale(.7)}
+      60%{transform:scale(1.05)}
+      100%{opacity:1;transform:scale(1)}
+    }
+    @keyframes heartBeat {
+      0%,100%{transform:scale(1)}
+      15%{transform:scale(1.25)}
+      30%{transform:scale(1)}
+      45%{transform:scale(1.15)}
+      60%{transform:scale(1)}
+    }
+    @keyframes shimmer {
+      0%{background-position:0% 50%}
+      100%{background-position:200% 50%}
+    }
+    @keyframes floatHearts {
+      0%{opacity:1;transform:translateY(0) scale(0) rotate(0)}
+      50%{opacity:.8;transform:translateY(-40vh) scale(1) rotate(180deg)}
+      100%{opacity:0;transform:translateY(-80vh) scale(.5) rotate(360deg)}
+    }
+    @keyframes confettiFall {
+      0%{opacity:1;transform:translateY(-10vh) rotate(0)}
+      100%{opacity:0;transform:translateY(100vh) rotate(720deg)}
+    }
+
+    .heart-particle {
+      position:fixed;
+      z-index:9999;
+      pointer-events:none;
+      font-size:24px;
+      animation:floatHearts 2.5s ease-out forwards;
+    }
+
+    .confetti-piece {
+      position:fixed;
+      z-index:9998;
+      pointer-events:none;
+      width:10px;
+      height:10px;
+      animation:confettiFall 2.5s ease-in forwards;
+    }
+
+    .new-match-flash {
+      animation:matchFlash 0.6s ease;
+    }
+    @keyframes matchFlash {
+      0%,100%{box-shadow:0 0 0 0 rgba(236,72,153,0)}
+      50%{box-shadow:0 0 0 12px rgba(236,72,153,.3)}
+    }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media(max-width:500px){
+      #app { max-width:100%; border-radius:0; }
+      .card-stack { height:420px; }
+      .profile-card .card-name { font-size:22px; }
+      .profile-card .card-info { padding:18px 16px 14px; }
+      .action-btn { width:52px; height:52px; font-size:22px; }
+      .matches-grid { grid-template-columns:repeat(2,1fr); }
+      .match-modal { padding:32px 20px 24px; }
+      .match-modal .match-profiles img { width:64px; height:64px; }
+    }
+
+    @media(max-width:360px){
+      .card-stack { height:360px; }
+      .action-btn { width:46px; height:46px; font-size:18px; gap:16px; }
+      .card-actions { gap:14px; }
+    }
+
+    /* ── Clase auxiliar ── */
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================
+       APP
+       ========================================================== -->
+  <div id="app">
+
+    <!-- ==================== REGISTRO ==================== -->
+    <div id="register-screen">
+      <div class="register-logo">💜 Rumbadoo</div>
+      <div class="register-sub">Encuentra tu ritmo</div>
+      <form id="register-form">
+        <label for="reg-name">Tu nombre</label>
+        <input type="text" id="reg-name" placeholder="Ej: Carlos" required>
+
+        <label for="reg-age">Edad</label>
+        <input type="number" id="reg-age" placeholder="18" min="18" max="120" required>
+
+        <label for="reg-gender">Género</label>
+        <select id="reg-gender">
+          <option value="Hombre">Hombre</option>
+          <option value="Mujer">Mujer</option>
+          <option value="No binario">No binario</option>
+          <option value="Otro">Otro</option>
+        </select>
+
+        <label for="reg-bio">Frase de perfil</label>
+        <textarea id="reg-bio" placeholder="Cuéntanos algo divertido sobre ti..." maxlength="150"></textarea>
+
+        <label for="reg-photo">Foto de perfil (URL opcional)</label>
+        <div class="avatar-preview-wrap">
+          <img id="avatar-preview" src="https://ui-avatars.com/api/?name=T&background=8b5cf6&color=fff&size=128" alt="Preview">
+          <input type="url" id="reg-photo" placeholder="https://... o déjalo vacío">
+        </div>
+
+        <button type="submit" class="btn-primary">💜 ¡Empezar!</button>
+      </form>
+    </div>
+
+    <!-- ==================== PANTALLA PRINCIPAL ==================== -->
+    <div id="main-screen" class="hidden">
+
+      <!-- Header -->
+      <div class="main-header">
+        <span class="logo">💜 Rumbadoo</span>
+        <div class="header-actions">
+          <button class="header-btn" id="btn-likes" title="Mis likes">
+            👍<span class="badge hidden" id="likes-badge">0</span>
+          </button>
+          <button class="header-btn" id="btn-profile" title="Mi perfil">👤</button>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="discover">
+          <span class="tab-icon">🔍</span> Descubrir
+        </button>
+        <button class="tab-btn" data-tab="matches">
+          <span class="tab-icon">💕</span> Matches
+          <span class="badge hidden" id="matches-badge">0</span>
+        </button>
+      </div>
+
+      <!-- Contenido -->
+      <div class="tab-content">
+
+        <!-- DESCUBRIR -->
+        <div class="tab-pane active" id="discover-pane">
+
+          <div class="card-stack" id="card-stack">
+            <!-- Las tarjetas se generan dinámicamente -->
+          </div>
+
+          <div class="card-actions" id="card-actions">
+            <button class="action-btn pass" id="btn-pass">👎</button>
+            <button class="action-btn like" id="btn-like">❤️</button>
+            <button class="action-btn super" id="btn-super">⭐</button>
+          </div>
+
+          <div class="no-more hidden" id="no-more">
+            <div class="emoji-big">🌈</div>
+            <h3>¡No hay más perfiles!</h3>
+            <p>Vuelve pronto para ver nuevos rumbos.</p>
+          </div>
+
+        </div>
+
+        <!-- MATCHES -->
+        <div class="tab-pane" id="matches-pane">
+          <div class="section-header">
+            <h2>💕 Tus matches</h2>
+            <span class="match-count" id="match-count">0</span>
+          </div>
+          <div class="matches-grid" id="matches-grid"></div>
+          <div class="empty-state hidden" id="matches-empty">
+            <div class="emoji-big">💔</div>
+            <h3>Sin matches todavía</h3>
+            <p>¡Sigue explorando perfiles!</p>
+          </div>
+        </div>
+
+      </div><!-- /tab-content -->
+    </div><!-- /main-screen -->
+
+  </div><!-- /app -->
+
+
+  <!-- ==================== MODAL MATCH ==================== -->
+  <div class="match-modal-overlay hidden" id="match-modal">
+    <div class="match-modal">
+      <span class="match-emoji">💜</span>
+      <h2>¡Es un Match!</h2>
+      <p>También le gustas a esta persona</p>
+      <div class="match-profiles">
+        <img id="match-my-avatar" src="" alt="Tú">
+        <span class="heart-icon">💜</span>
+        <img id="match-their-avatar" src="" alt="Match">
+      </div>
+      <button class="btn-primary" id="match-continue">💜 ¡Seguir conociendo!</button>
+    </div>
+  </div>
+
+
+  <!-- ==========================================================
+       JAVASCRIPT
+       ========================================================== -->
+  <script>
+    /* ==============================================================
+       RUMBADOO — Aplicación completa del lado del cliente
+       ============================================================== */
+
+    // ─── Perfiles de ejemplo precargados ──────────────────────────
+    const SAMPLE_PROFILES = [
+      {
+        id: 's1',
+        name: 'Valentina',
+        age: 26,
+        gender: 'Mujer',
+        bio: '✨ Bailarina en días libres, programadora de profesión. Busco a alguien que baile conmigo bajo la lluvia.',
+        photo: 'https://ui-avatars.com/api/?name=Valentina&background=8b5cf6&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's2',
+        name: 'Mateo',
+        age: 28,
+        gender: 'Hombre',
+        bio: '🎸 Guitarrista y chef frustrado. Puedo tocarte una canción mientras cocino pasta.',
+        photo: 'https://ui-avatars.com/api/?name=Mateo&background=7c3aed&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's3',
+        name: 'Camila',
+        age: 24,
+        gender: 'Mujer',
+        bio: '📚 Adicta a los libros y al café. Si me invitas a una librería, me tienes ganada.',
+        photo: 'https://ui-avatars.com/api/?name=Camila&background=a78bfa&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's4',
+        name: 'Santiago',
+        age: 30,
+        gender: 'Hombre',
+        bio: '🏋️‍♂️ Fitness lover. Mi religión es el gym y mi pecado favorito es el chocolate.',
+        photo: 'https://ui-avatars.com/api/?name=Santiago&background=6b3fa0&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's5',
+        name: 'Isabella',
+        age: 22,
+        gender: 'Mujer',
+        bio: '🎨 Artista y soñadora. Vivo entre acuarelas y atardeceres.',
+        photo: 'https://ui-avatars.com/api/?name=Isabella&background=c4b5fd&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's6',
+        name: 'Daniel',
+        age: 27,
+        gender: 'Hombre',
+        bio: '🐶 Mi perro es más interesante que yo. Pero igual dame una oportunidad.',
+        photo: 'https://ui-avatars.com/api/?name=Daniel&background=4a2c8a&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's7',
+        name: 'Sofía',
+        age: 29,
+        gender: 'Mujer',
+        bio: '🌮 Amo los tacos y viajar. Si sabes dónde venden los mejores tacos, ya tenemos cita.',
+        photo: 'https://ui-avatars.com/api/?name=Sofia&background=ddd6fe&color=333&size=256&bold=true'
+      },
+      {
+        id: 's8',
+        name: 'Andrés',
+        age: 25,
+        gender: 'Hombre',
+        bio: '🎮 Gamer y coleccionista de memes. Busco a alguien que aguante mis jokes malos.',
+        photo: 'https://ui-avatars.com/api/?name=Andres&background=8b5cf6&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's9',
+        name: 'María José',
+        age: 23,
+        gender: 'Mujer',
+        bio: '🌸 Amante del yoga, la naturaleza y los cafés con pierna. Busco paz y buena vibra.',
+        photo: 'https://ui-avatars.com/api/?name=Maria+Jose&background=e6d5f5&color=333&size=256&bold=true'
+      },
+      {
+        id: 's10',
+        name: 'Fernando',
+        age: 31,
+        gender: 'Hombre',
+        bio: '🎬 Cinefilo empedernido. Puedo recomendarte películas todo el fin de semana.',
+        photo: 'https://ui-avatars.com/api/?name=Fernando&background=2d1b69&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's11',
+        name: 'Lucía',
+        age: 21,
+        gender: 'Mujer',
+        bio: '🎤 Cantante en la ducha, fan del karaoke y de los atardeceres en la playa.',
+        photo: 'https://ui-avatars.com/api/?name=Lucia&background=a78bfa&color=fff&size=256&bold=true'
+      },
+      {
+        id: 's12',
+        name: 'Javier',
+        age: 26,
+        gender: 'Hombre',
+        bio: '☕ Barista de corazón. Puedo prepararte el mejor latte art de tu vida.',
+        photo: 'https://ui-avatars.com/api/?name=Javier&background=7c3aed&color=fff&size=256&bold=true'
+      }
+    ];
+
+    // ─── Estado de la aplicación ─────────────────────────────────
+    let state = {
+      currentUser: null,        // { id, name, age, gender, bio, photo }
+      profiles: [],            // copia de SAMPLE_PROFILES (filtrados)
+      likes: [],               // ids de perfiles a los que di like
+      passed: [],              // ids de perfiles que pasé
+      matches: [],             // { userId, profileId, profileName, profilePhoto, matchedAt }
+      viewedProfiles: [],      // control para no repetir
+      currentCardIndex: 0,
+      isSwiping: false,
+      hasNewMatch: false
+    };
+
+    // ─── Referencias DOM ─────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const registerScreen  = $('register-screen');
+    const registerForm    = $('register-form');
+    const mainScreen      = $('main-screen');
+    const cardStack       = $('card-stack');
+    const noMore          = $('no-more');
+    const cardActions     = $('card-actions');
+    const btnLike         = $('btn-like');
+    const btnPass         = $('btn-pass');
+    const btnSuper        = $('btn-super');
+    const matchesGrid     = $('matches-grid');
+    const matchesEmpty    = $('matches-empty');
+    const matchCount      = $('match-count');
+    const matchModal      = $('match-modal');
+    const matchMyAvatar   = $('match-my-avatar');
+    const matchTheirAvatar = $('match-their-avatar');
+    const matchContinue   = $('match-continue');
+    const matchesBadge    = $('matches-badge');
+    const likesBadge      = $('likes-badge');
+
+    // ─── Utilerías ───────────────────────────────────────────────
+    function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+    function avatarUrl(name) {
+      const c = ['8b5cf6','7c3aed','6b3fa0','4a2c8a','a78bfa','c4b5fd','ddd6fe','e6d5f5','2d1b69'];
+      const i = name.length % c.length;
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${c[i]}&color=fff&size=256&bold=true`;
+    }
+
+    // ─── Persistencia (localStorage) ─────────────────────────────
+    function saveState() {
+      try {
+        const data = {
+          currentUser: state.currentUser,
+          likes: state.likes,
+          passed: state.passed,
+          matches: state.matches,
+          viewedProfiles: state.viewedProfiles
+        };
+        localStorage.setItem('rumbadoo_state', JSON.stringify(data));
+      } catch(e) { /* localStorage lleno o no disponible */ }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('rumbadoo_state');
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        state.currentUser    = data.currentUser || null;
+        state.likes          = data.likes || [];
+        state.passed         = data.passed || [];
+        state.matches         = data.matches || [];
+        state.viewedProfiles  = data.viewedProfiles || [];
+        return true;
+      } catch(e) { return false; }
+    }
+
+    // ─── Inicialización ──────────────────────────────────────────
+    function init() {
+      // Cargar perfiles de ejemplo
+      state.profiles = SAMPLE_PROFILES.map(p => ({ ...p }));
+
+      // Intentar restaurar sesión
+      if (loadState() && state.currentUser) {
+        showMainScreen();
+      } else {
+        showRegisterScreen();
+      }
+    }
+
+    // ─── Pantallas ───────────────────────────────────────────────
+    function showRegisterScreen() {
+      registerScreen.classList.remove('hidden');
+      mainScreen.classList.add('hidden');
+    }
+
+    function showMainScreen() {
+      registerScreen.classList.add('hidden');
+      mainScreen.classList.remove('hidden');
+
+      // Filtrar el usuario actual de los perfiles disponibles
+      state.profiles = SAMPLE_PROFILES.filter(p => p.id !== state.currentUser?.id);
+
+      // Reconstruir las colecciones de likes/passed limpiando referencias rotas
+      const validIds = new Set(state.profiles.map(p => p.id));
+      state.likes   = state.likes.filter(id => validIds.has(id));
+      state.passed  = state.passed.filter(id => validIds.has(id));
+
+      // Verificar matches nuevos (like mutuo)
+      checkForNewMatches();
+
+      renderAll();
+      saveState();
+
+      // Si estábamos en la pestaña matches, refrescar
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (activeTab) switchTab(activeTab.dataset.tab);
+    }
+
+    // ─── Detección de matches ──────────────────────────────────
+    function checkForNewMatches() {
+      // Recorremos los likes del usuario
+      for (const likedId of state.likes) {
+        // ¿Ese perfil también nos dio like? (simulado: 35% de probabilidad)
+        if (state.matches.some(m => m.profileId === likedId)) continue;
+
+        // Simulamos reciprocidad: 35% de quienes reciben like también dan like
+        const isMutual = Math.random() < 0.35;
+
+        if (isMutual) {
+          const profile = state.profiles.find(p => p.id === likedId);
+          if (!profile) continue;
+
+          state.matches.push({
+            id: genId(),
+            profileId: likedId,
+            profileName: profile.name,
+            profilePhoto: profile.photo,
+            matchedAt: new Date().toISOString()
+          });
+
+          state.hasNewMatch = true;
+        }
+      }
+
+      // Ordenar matches por fecha (más reciente primero)
+      state.matches.sort((a,b) => new Date(b.matchedAt) - new Date(a.matchedAt));
+    }
+
+    // ─── Renderizado ─────────────────────────────────────────────
+    function renderAll() {
+      renderCard();
+      renderMatches();
+      renderBadges();
+      renderLikesList();
+    }
+
+    // ─── Tarjetas ────────────────────────────────────────────────
+    function getNextProfile() {
+      const available = state.profiles.filter(p =>
+        !state.likes.includes(p.id) &&
+        !state.passed.includes(p.id) &&
+        p.id !== state.currentUser?.id
+      );
+      if (available.length === 0) return null;
+
+      // Ordenar: los no vistos primero, luego por edad cercana
+      const unseen = available.filter(p => !state.viewedProfiles.includes(p.id));
+      const seen   = available.filter(p => state.viewedProfiles.includes(p.id));
+
+      const pool = unseen.length > 0 ? unseen : seen;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function renderCard() {
+      const profile = getNextProfile();
+      cardStack.innerHTML = '';
+
+      if (!profile) {
+        noMore.classList.remove('hidden');
+        cardActions.classList.add('hidden');
+        return;
+      }
+
+      noMore.classList.add('hidden');
+      cardActions.classList.remove('hidden');
+
+      const card = document.createElement('div');
+      card.className = 'profile-card';
+      card.dataset.profileId = profile.id;
+
+      card.innerHTML = `
+        <img class="card-bg" src="${profile.photo}" alt="${profile.name}" draggable="false">
+        <div class="card-overlay"></div>
+        <div class="swipe-indicator like">❤️</div>
+        <div class="swipe-indicator nope">👎</div>
+        <div class="card-info">
+          <div class="card-name">${profile.name} <span class="card-age">${profile.age}</span></div>
+          <div class="card-bio">${profile.bio}</div>
+          <span class="card-gender">${profile.gender}</span>
+        </div>
+      `;
+
+      cardStack.appendChild(card);
+
+      // Eventos de swipe táctil / mouse
+      setupSwipe(card);
+
+      // Animación de entrada
+      card.style.animation = 'fadeUp 0.35s ease backwards';
+    }
+
+    // ─── Swipe ───────────────────────────────────────────────────
+    let swipeStartX = 0, swipeStartY = 0;
+    let isDragging = false;
+    let currentCard = null;
+
+    function setupSwipe(card) {
+      const indicators = {
+        like: card.querySelector('.swipe-indicator.like'),
+        nope: card.querySelector('.swipe-indicator.nope')
+      };
+
+      const onStart = (x, y) => {
+        if (state.isSwiping) return;
+        isDragging = true;
+        swipeStartX = x;
+        swipeStartY = y;
+        card.classList.add('swiping');
+        currentCard = card;
+      };
+
+      const onMove = (x, y) => {
+        if (!isDragging || !currentCard) return;
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        const rotation = dx * 0.08;
+        const opacity = Math.min(1, Math.abs(dx) / 150);
+
+        currentCard.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`;
+
+        if (dx > 30) {
+          indicators.like.classList.add('show');
+          indicators.nope.classList.remove('show');
+        } else if (dx < -30) {
+          indicators.nope.classList.add('show');
+          indicators.like.classList.remove('show');
+        } else {
+          indicators.like.classList.remove('show');
+          indicators.nope.classList.remove('show');
+        }
+      };
+
+      const onEnd = () => {
+        if (!isDragging || !currentCard) return;
+        isDragging = false;
+        const rect = currentCard.getBoundingClientRect();
+        const cardCenter = rect.left + rect.width / 2;
+        const screenCenter = window.innerWidth / 2;
+        const dx = cardCenter - screenCenter;
+
+        indicators.like.classList.remove('show');
+        indicators.nope.classList.remove('show');
+
+        if (Math.abs(dx) > 80) {
+          const isLike = dx > 0;
+          const profileId = currentCard.dataset.profileId;
+          if (isLike) {
+            handleLike(profileId);
+          } else {
+            handlePass(profileId);
+          }
+        } else {
+          // Regresar a la posición original
+          currentCard.style.transition = 'transform 0.3s ease';
+          currentCard.style.transform = '';
+          setTimeout(() => {
+            if (currentCard) currentCard.classList.remove('swiping');
+          }, 300);
+        }
+      };
+
+      // Mouse events
+      card.addEventListener('mousedown', e => {
+        e.preventDefault();
+        onStart(e.clientX, e.clientY);
+      });
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        onMove(e.clientX, e.clientY);
+      });
+      document.addEventListener('mouseup', () => {
+        if (isDragging) onEnd();
+      });
+
+      // Touch events
+      card.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        onStart(t.clientX, t.clientY);
+      }, { passive: true });
+      card.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        const t = e.touches[0];
+        onMove(t.clientX, t.clientY);
+      }, { passive: true });
+      card.addEventListener('touchend', () => {
+        if (isDragging) onEnd();
+      }, { passive: true });
+    }
+
+    // ─── Acciones ────────────────────────────────────────────────
+    function handleLike(profileId, isSuper = false) {
+      if (state.isSwiping) return;
+      state.isSwiping = true;
+
+      const card = document.querySelector('.profile-card');
+      if (card) {
+        card.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+        card.style.transform = `translateX(140%) rotate(24deg)`;
+        card.style.opacity = '0';
+      }
+
+      setTimeout(() => {
+        if (!state.likes.includes(profileId)) {
+          state.likes.push(profileId);
+        }
+        state.viewedProfiles.push(profileId);
+
+        // Verificar si hay match
+        const hadMatchBefore = state.matches.length;
+        checkForNewMatches();
+        const hasNew = state.matches.length > hadMatchBefore;
+
+        saveState();
+        renderAll();
+
+        if (hasNew) {
+          showMatchModal(profileId);
+        }
+
+        state.isSwiping = false;
+      }, 400);
+    }
+
+    function handlePass(profileId) {
+      if (state.isSwiping) return;
+      state.isSwiping = true;
+
+      const card = document.querySelector('.profile-card');
+      if (card) {
+        card.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+        card.style.transform = `translateX(-140%) rotate(-24deg)`;
+        card.style.opacity = '0';
+      }
+
+      setTimeout(() => {
+        if (!state.passed.includes(profileId)) {
+          state.passed.push(profileId);
+        }
+        state.viewedProfiles.push(profileId);
+        saveState();
+        renderAll();
+        state.isSwiping = false;
+      }, 400);
+    }
+
+    // ─── Botones ─────────────────────────────────────────────────
+    btnLike.addEventListener('click', () => {
+      const card = document.querySelector('.profile-card');
+      if (!card) return;
+      handleLike(card.dataset.profileId);
+    });
+
+    btnPass.addEventListener('click', () => {
+      const card = document.querySelector('.profile-card');
+      if (!card) return;
+      handlePass(card.dataset.profileId);
+    });
+
+    btnSuper.addEventListener('click', () => {
+      const card = document.querySelector('.profile-card');
+      if (!card) return;
+      handleLike(card.dataset.profileId, true);
+    });
+
+    // ─── Teclado ─────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') btnLike.click();
+      if (e.key === 'ArrowLeft') btnPass.click();
+      if (e.key === 'ArrowUp') btnSuper.click();
+    });
+
+    // ─── Matches ─────────────────────────────────────────────────
+    function renderMatches() {
+      matchesGrid.innerHTML = '';
+
+      if (state.matches.length === 0) {
+        matchesEmpty.classList.remove('hidden');
+        matchCount.textContent = '0';
+        return;
+      }
+
+      matchesEmpty.classList.add('hidden');
+      matchCount.textContent = state.matches.length;
+
+      state.matches.forEach((m, i) => {
+        const div = document.createElement('div');
+        div.className = 'match-card';
+        div.style.animationDelay = `${i * 0.08}s`;
+        div.innerHTML = `
+          <img src="${m.profilePhoto}" alt="${m.profileName}" loading="lazy">
+          <div class="match-name">${m.profileName}</div>
+          <div class="match-age">💜 Match</div>
+        `;
+        matchesGrid.appendChild(div);
+      });
+    }
+
+    // ─── Modal de Match ──────────────────────────────────────────
+    function showMatchModal(profileId) {
+      const profile = state.profiles.find(p => p.id === profileId);
+      if (!profile) return;
+
+      // Buscar el match más reciente con este perfil
+      const match = state.matches.filter(m => m.profileId === profileId)
+        .sort((a,b) => new Date(b.matchedAt) - new Date(a.matchedAt))[0];
+      if (!match) return;
+
+      matchMyAvatar.src = state.currentUser.photo || avatarUrl(state.currentUser.name);
+      matchTheirAvatar.src = profile.photo;
+      matchModal.classList.remove('hidden');
+
+      // Efecto de confeti y corazones
+      spawnHearts();
+      spawnConfetti();
+
+      // Actualizar badge de matches
+      renderBadges();
+    }
+
+    matchContinue.addEventListener('click', () => {
+      matchModal.classList.add('hidden');
+      state.hasNewMatch = false;
+      renderBadges();
+    });
+
+    // Cerrar modal con overlay click
+    matchModal.addEventListener('click', e => {
+      if (e.target === matchModal) {
+        matchModal.classList.add('hidden');
+        state.hasNewMatch = false;
+        renderBadges();
+      }
+    });
+
+    // ─── Efectos especiales ──────────────────────────────────────
+    function spawnHearts() {
+      const emojis = ['💜','❤️','💕','💗','🌸','✨'];
+      for (let i = 0; i < 18; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.className = 'heart-particle';
+          el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          el.style.left = Math.random() * 100 + 'vw';
+          el.style.top = '60%';
+          el.style.fontSize = (14 + Math.random() * 20) + 'px';
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 2600);
+        }, i * 80);
+      }
+    }
+
+    function spawnConfetti() {
+      const colors = ['#8b5cf6','#ec4899','#f43f5e','#fbbf24','#34d399','#60a5fa','#c084fc','#e879f9'];
+      for (let i = 0; i < 40; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.className = 'confetti-piece';
+          el.style.left = Math.random() * 100 + 'vw';
+          el.style.top = '40%';
+          el.style.background = colors[i % colors.length];
+          el.style.width = (6 + Math.random() * 8) + 'px';
+          el.style.height = (6 + Math.random() * 8) + 'px';
+          el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+          el.style.transform = `rotate(${Math.random() * 360}deg)`;
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 2600);
+        }, i * 40);
+      }
+    }
+
+    // ─── Badges ──────────────────────────────────────────────────
+    function renderBadges() {
+      // Badge de matches
+      if (state.matches.length > 0) {
+        matchesBadge.textContent = state.matches.length;
+        matchesBadge.classList.remove('hidden');
+      } else {
+        matchesBadge.classList.add('hidden');
+      }
+
+      // Badge de likes (cuántas personas te han dado like simuladamente)
+      // Simulamos: 40% de las personas a las que has dado like también te dan like (ya está en matches)
+      const likesCount = state.likes.length;
+      if (likesCount > 0) {
+        likesBadge.textContent = likesCount;
+        likesBadge.classList.remove('hidden');
+      } else {
+        likesBadge.classList.add('hidden');
+      }
+    }
+
+    // ─── Likes (panel lateral) ───────────────────────────────────
+    function renderLikesList() {
+      // No tenemos un panel dedicado de likes en este diseño,
+      // pero mostramos el badge. Al hacer click en el header se puede abrir una lista.
+    }
+
+    $('btn-likes').addEventListener('click', () => {
+      // Mostrar modal simple con la gente que le gustó
+      if (state.likes.length === 0) {
+        alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');
+        return;
+      }
+
+      let msg = '💜 Personas que te gustaron:\n\n';
+      state.likes.forEach(id => {
+        const p = state.profiles.find(pr => pr.id === id);
+        if (p) {
+          const isMatch = state.matches.some(m => m.profileId === id);
+          msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
+        }
+      });
+      msg += `\nTotal: ${state.likes.length} likes`;
+      alert(msg);
+    });
+
+    // ─── Perfil propio ──────────────────────────────────────────
+    $('btn-profile').addEventListener('click', () => {
+      if (!state.currentUser) return;
+      const u = state.currentUser;
+      const matchCount_ = state.matches.length;
+      const likeCount_  = state.likes.length;
+
+      alert(
+        `👤 Tu perfil de Rumbadoo\n\n` +
+        `Nombre: ${u.name}\n` +
+        `Edad: ${u.age}\n` +
+        `Género: ${u.gender}\n` +
+        `Frase: "${u.bio || 'Sin frase'}"\n\n` +
+        `💕 Matches: ${matchCount_}\n` +
+        `👍 Likes dados: ${likeCount_}\n\n` +
+        `¿Quieres cerrar sesión? (recarga la página para reiniciar)`
+      );
+    });
+
+    // ─── Tabs ────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+      const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+      const pane = document.getElementById(`${tabId}-pane`);
+      if (tabBtn) tabBtn.classList.add('active');
+      if (pane) pane.classList.add('active');
+
+      // Si vamos a matches, refrescar
+      if (tabId === 'matches') {
+        renderMatches();
+      }
+    }
+
+    // ─── Registro ────────────────────────────────────────────────
+    registerForm.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const name  = $('reg-name').value.trim();
+      const age   = parseInt($('reg-age').value, 10);
+      const gender = $('reg-gender').value;
+      const bio   = $('reg-bio').value.trim();
+      let photo   = $('reg-photo').value.trim();
+
+      if (!name) { alert('Por favor ingresa tu nombre.'); return; }
+      if (!age || age < 18) { alert('Debes tener al menos 18 años.'); return; }
+
+      if (!photo) {
+        photo = avatarUrl(name);
+      }
+
+      const userId = genId();
+
+      state.currentUser = {
+        id: userId,
+        name,
+        age,
+        gender,
+        bio: bio || 'Nuevo en Rumbadoo 💜',
+        photo
+      };
+
+      state.likes = [];
+      state.passed = [];
+      state.matches = [];
+      state.viewedProfiles = [];
+      state.hasNewMatch = false;
+
+      saveState();
+      showMainScreen();
+    });
+
+    // ─── Preview de avatar en registro ──────────────────────────
+    $('reg-photo').addEventListener('input', function() {
+      const preview = $('avatar-preview');
+      const val = this.value.trim();
+      if (val) {
+        preview.src = val;
+      } else {
+        const name = $('reg-name').value.trim() || 'T';
+        preview.src = avatarUrl(name || 'T');
+      }
+    });
+
+    $('reg-name').addEventListener('input', function() {
+      const val = this.value.trim();
+      const photoUrl = $('reg-photo').value.trim();
+      if (!photoUrl) {
+        $('avatar-preview').src = avatarUrl(val || 'T');
+      }
+    });
+
+    // ─── Iniciar aplicación ─────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+</body>
+</html>
