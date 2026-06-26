@@ -673,6 +673,126 @@
     }
 
     /* ============================================================
+       MODAL EDITAR PERFIL
+       ============================================================ */
+    .edit-overlay {
+      position:fixed;
+      inset:0;
+      z-index:900;
+      background:rgba(45,27,105,.6);
+      backdrop-filter:blur(6px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      animation:fadeIn 0.25s ease;
+      padding:20px;
+    }
+    .edit-overlay.hidden { display:none; }
+
+    .edit-modal {
+      background:var(--white);
+      border-radius:var(--radius);
+      padding:28px 24px;
+      max-width:400px;
+      width:100%;
+      max-height:90vh;
+      overflow-y:auto;
+      box-shadow:var(--shadow-xl);
+      animation:bounceIn 0.35s ease backwards;
+    }
+    .edit-modal h2 {
+      font-size:22px;
+      font-weight:800;
+      color:var(--purple-800);
+      text-align:center;
+      margin-bottom:20px;
+    }
+    .edit-form {
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .edit-form label {
+      font-size:13px;
+      font-weight:700;
+      color:var(--purple-800);
+      margin-bottom:-8px;
+    }
+    .edit-form input,
+    .edit-form select,
+    .edit-form textarea {
+      width:100%;
+      padding:12px 16px;
+      border:2px solid var(--purple-200);
+      border-radius:var(--radius-sm);
+      font-family:var(--font);
+      font-size:15px;
+      background:var(--white);
+      transition:var(--transition);
+      outline:none;
+    }
+    .edit-form input:focus,
+    .edit-form select:focus,
+    .edit-form textarea:focus {
+      border-color:var(--purple-500);
+      box-shadow:0 0 0 4px rgba(139,92,246,.15);
+    }
+    .edit-form textarea { resize:vertical; min-height:56px; }
+
+    .edit-photo-area {
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .edit-photo-area img {
+      width:64px; height:64px;
+      border-radius:50%;
+      object-fit:cover;
+      border:3px solid var(--purple-300);
+      background:var(--purple-100);
+      flex-shrink:0;
+    }
+    .edit-photo-area .photo-inputs {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .edit-photo-area .photo-inputs input[type="file"] {
+      font-size:13px;
+      padding:6px 0;
+      border:none;
+    }
+    .edit-photo-area .photo-inputs input[type="url"] {
+      font-size:13px;
+      padding:8px 12px;
+    }
+    .edit-actions {
+      display:flex;
+      gap:10px;
+      margin-top:4px;
+    }
+    .edit-actions .btn-primary { flex:1; }
+    .btn-secondary {
+      flex:1;
+      padding:14px 24px;
+      border:2px solid var(--purple-200);
+      border-radius:var(--radius-full);
+      font-family:var(--font);
+      font-size:16px;
+      font-weight:800;
+      color:var(--gray-500);
+      background:var(--white);
+      cursor:pointer;
+      transition:var(--transition);
+    }
+    .btn-secondary:hover {
+      border-color:var(--purple-400);
+      color:var(--purple-700);
+      background:var(--purple-50);
+    }
+
+    /* ============================================================
        ADMIN PANEL
        ============================================================ */
     #admin-screen {
@@ -983,6 +1103,45 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL EDITAR PERFIL ==================== -->
+  <div class="edit-overlay hidden" id="edit-overlay">
+    <div class="edit-modal">
+      <h2>✏️ Editar perfil</h2>
+      <form class="edit-form" id="edit-form">
+        <label for="edit-name">Nombre</label>
+        <input type="text" id="edit-name" required>
+
+        <label for="edit-age">Edad</label>
+        <input type="number" id="edit-age" min="18" max="120" required>
+
+        <label for="edit-gender">Género</label>
+        <select id="edit-gender">
+          <option value="Hombre">Hombre</option>
+          <option value="Mujer">Mujer</option>
+          <option value="No binario">No binario</option>
+          <option value="Otro">Otro</option>
+        </select>
+
+        <label for="edit-bio">Frase de perfil</label>
+        <textarea id="edit-bio" maxlength="150"></textarea>
+
+        <label>Foto de perfil</label>
+        <div class="edit-photo-area">
+          <img id="edit-photo-preview" src="" alt="Preview">
+          <div class="photo-inputs">
+            <input type="file" id="edit-photo-file" accept="image/*">
+            <input type="url" id="edit-photo-url" placeholder="O pega una URL...">
+          </div>
+        </div>
+
+        <div class="edit-actions">
+          <button type="button" class="btn-secondary" id="edit-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary">💜 Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     /* ==============================================================
        RUMBADOO — MiniSQL + App
@@ -1154,6 +1313,16 @@
     const adminScreen      = $('admin-screen');
     const adminBody        = $('admin-body');
     const adminClose       = $('admin-close');
+    const editOverlay      = $('edit-overlay');
+    const editForm         = $('edit-form');
+    const editName         = $('edit-name');
+    const editAge          = $('edit-age');
+    const editGender       = $('edit-gender');
+    const editBio          = $('edit-bio');
+    const editPhotoPreview = $('edit-photo-preview');
+    const editPhotoFile    = $('edit-photo-file');
+    const editPhotoUrl     = $('edit-photo-url');
+    const editCancel       = $('edit-cancel');
 
     // ==============================================================
     //   INICIALIZACIÓN
@@ -1657,18 +1826,83 @@
     });
 
     // ==============================================================
-    //   PERFIL PROPIO
+    //   EDITAR PERFIL
     // ==============================================================
+
+    // Abrir modal de edición
     $('btn-profile').addEventListener('click', () => {
       if (!currentUser) return;
       const u = currentUser;
-      alert(
-        `👤 Tu perfil de Rumbadoo\n\n` +
-        `Nombre: ${u.name}\nEdad: ${u.age}\nGénero: ${u.gender}\n` +
-        `Frase: "${u.bio || 'Sin frase'}"\n\n` +
-        `🔑 Contraseña: (no se muestra por seguridad)\n\n` +
-        `¿Quieres cerrar sesión? Usa el botón 🚪`
-      );
+      editName.value = u.name;
+      editAge.value = u.age;
+      editGender.value = u.gender || 'Hombre';
+      editBio.value = u.bio || '';
+      editPhotoPreview.src = u.photo;
+      editPhotoUrl.value = '';
+      editPhotoFile.value = '';
+      editOverlay.classList.remove('hidden');
+    });
+
+    // Cerrar modal
+    editCancel.addEventListener('click', () => editOverlay.classList.add('hidden'));
+    editOverlay.addEventListener('click', e => { if (e.target === editOverlay) editOverlay.classList.add('hidden'); });
+
+    // Subir foto desde archivo
+    editPhotoFile.addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        editPhotoPreview.src = e.target.result;
+        editPhotoUrl.value = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Foto por URL
+    editPhotoUrl.addEventListener('input', function() {
+      const val = this.value.trim();
+      if (val) editPhotoPreview.src = val;
+    });
+
+    // Guardar cambios
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const name = editName.value.trim();
+      const age = parseInt(editAge.value, 10);
+      const gender = editGender.value;
+      const bio = editBio.value.trim();
+      let photo = editPhotoPreview.src;
+
+      if (!name) { alert('El nombre no puede estar vacío.'); return; }
+      if (!age || age < 18) { alert('Debes tener al menos 18 años.'); return; }
+
+      // Si hay nueva URL, usarla; si no, mantener la foto actual (puede ser base64 de archivo)
+      const urlVal = editPhotoUrl.value.trim();
+      if (urlVal) photo = urlVal;
+
+      // Verificar nombre único si cambió
+      if (name !== currentUser.name) {
+        const existing = await db.select(STORE_PROFILES, { index: 'by_name', value: name });
+        if (existing && existing.length > 0) {
+          alert('Ese nombre ya está en uso. Elige otro.');
+          return;
+        }
+      }
+
+      // Actualizar en BD
+      currentUser.name = name;
+      currentUser.age = age;
+      currentUser.gender = gender;
+      currentUser.bio = bio || 'Nuevo en Rumbadoo 💜';
+      currentUser.photo = photo;
+
+      await db.update(STORE_PROFILES, currentUser);
+
+      editOverlay.classList.add('hidden');
+      alert('💜 ¡Perfil actualizado correctamente!');
     });
 
     // ==============================================================
