@@ -1144,32 +1144,8 @@
 
   <script>
     /* ==============================================================
-       RUMBADOO — App con backend real (Express + SQLite)
+       RUMBADOO — App full-stack con IndexedDB + Supabase
        ============================================================== */
-
-    // ─── Configuración de la API ──────────────────────────────
-    const API = window.location.origin + '/api';
-
-    async function api(path, opts = {}) {
-      let res;
-      try {
-        res = await fetch(API + path, {
-          headers: { 'Content-Type': 'application/json', ...opts.headers },
-          ...opts
-        });
-      } catch (e) {
-        throw new Error('No se puede conectar al servidor. Asegúrate de ejecutar: node server.js');
-      }
-      let data;
-      try {
-        data = await res.json();
-      } catch (e) {
-        const text = await res.text();
-        throw new Error('El servidor no respondió correctamente. Verifica que el servidor esté corriendo en http://localhost:3000');
-      }
-      if (!res.ok) throw new Error(data.error || 'Error del servidor');
-      return data;
-    }
 
     // ─── Utilidades ──────────────────────────────────────────
     const $ = id => document.getElementById(id);
@@ -1185,11 +1161,362 @@
       return 'h' + Math.abs(h).toString(36);
     }
 
-    // ─── Estado global ───────────────────────────────────────
+    function genId() {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    // ==============================================================
+    //   CAPA 1: MiniSQL (IndexedDB) — funciona offline, sin servidor
+    // ==============================================================
+    class MiniSQL {
+      constructor(dbName, version) {
+        this.dbName = dbName;
+        this.version = version;
+        this.db = null;
+      }
+      open(stores) {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, this.version);
+          req.onupgradeneeded = (ev) => {
+            const db = ev.target.result;
+            stores.forEach(s => {
+              if (!db.objectStoreNames.contains(s.name)) {
+                const store = db.createObjectStore(s.name, { keyPath: s.key || 'id', autoIncrement: !!s.auto });
+                if (s.indexes) s.indexes.forEach(idx => store.createIndex(idx.name, idx.key, idx.opts || {}));
+              }
+            });
+          };
+          req.onsuccess = (ev) => { this.db = ev.target.result; resolve(); };
+          req.onerror = (ev) => reject(ev.target.error);
+        });
+      }
+      insert(storeName, data) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          const req = store.put(data);
+          req.onsuccess = () => resolve(data);
+          req.onerror = () => reject(req.error);
+        });
+      }
+      select(storeName, query) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readonly');
+          const store = tx.objectStore(storeName);
+          let req;
+          if (!query) req = store.getAll();
+          else if (query.id) req = store.get(query.id);
+          else if (query.index && query.value) req = store.index(query.index).getAll(query.value);
+          else req = store.getAll();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+      selectAll(storeName) { return this.select(storeName); }
+      update(storeName, data) { return this.insert(storeName, data); }
+      delete(storeName, id) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          store.delete(id);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+    }
+
+    // ==============================================================
+    //   CAPA 2: SupabaseDB (REST API en la nube)
+    // ==============================================================
+    class SupabaseDB {
+      constructor() {
+        this.url = '';
+        this.key = '';
+        this.ready = false;
+      }
+
+      configure(url, key) {
+        this.url = url.replace(/\/$/, '');
+        this.key = key;
+        this.ready = !!(url && key);
+        if (this.ready) {
+          localStorage.setItem('rumbadoo_supabase_url', url);
+          localStorage.setItem('rumbadoo_supabase_key', key);
+        }
+      }
+
+      loadConfig() {
+        const url = localStorage.getItem('rumbadoo_supabase_url');
+        const key = localStorage.getItem('rumbadoo_supabase_key');
+        if (url && key) this.configure(url, key);
+        return this.ready;
+      }
+
+      clearConfig() {
+        localStorage.removeItem('rumbadoo_supabase_url');
+        localStorage.removeItem('rumbadoo_supabase_key');
+        this.ready = false;
+      }
+
+      async fetch(method, table, opts = {}) {
+        if (!this.ready) throw new Error('Supabase no configurado.');
+        let url = `${this.url}/rest/v1/${table}`;
+        if (opts.query) url += '?' + opts.query;
+        if (opts.id) url += `?id=eq.${opts.id}&select=*`;
+
+        const headers = {
+          'apikey': this.key,
+          'Authorization': 'Bearer ' + this.key,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        };
+        if (opts.count) headers['Prefer'] = 'count=exact,return=representation';
+
+        const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+        if (opts.count && res.status === 200) {
+          const count = parseInt(res.headers.get('content-range')?.split('/')[1] || '0', 10);
+          return { data: await res.json(), count };
+        }
+        if (!res.ok) {
+          const txt = await res.text().catch(() => '');
+          throw new Error(`Supabase error ${res.status}: ${txt.slice(0,100)}`);
+        }
+        return res.json();
+      }
+
+      // ─── Perfiles ──────────────────────────────────────
+      async getProfile(id) {
+        const rows = await this.fetch('GET', 'profiles', { id: `eq.${id}` });
+        return rows?.[0] || null;
+      }
+      async getProfileByName(name) {
+        const rows = await this.fetch('GET', `profiles?name=eq.${encodeURIComponent(name)}&select=*`);
+        return rows?.[0] || null;
+      }
+      async getAllProfiles(excludeId) {
+        let q = 'select=*';
+        if (excludeId) q += `&id=neq.${excludeId}&role=neq.admin`;
+        else q += '&role=neq.admin';
+        return this.fetch('GET', `profiles?${q}`);
+      }
+      async createProfile(data) {
+        data.created_at = new Date().toISOString();
+        const rows = await this.fetch('POST', 'profiles', { body: data });
+        return rows?.[0] || data;
+      }
+      async updateProfile(id, data) {
+        const rows = await this.fetch('PATCH', `profiles?id=eq.${id}`, { body: data });
+        return rows?.[0] || data;
+      }
+      async deleteProfile(id) {
+        await this.fetch('DELETE', `profiles?id=eq.${id}`);
+      }
+
+      // ─── Interacciones ─────────────────────────────────
+      async getInteractionsByUser(userId) {
+        return this.fetch('GET', `interactions?fromId=eq.${encodeURIComponent(userId)}&order=createdAt.desc`);
+      }
+      async createInteraction(fromId, toId, type) {
+        const body = { id: genId(), fromId, toId, type, created_at: new Date().toISOString() };
+        await this.fetch('POST', 'interactions', { body });
+
+        let match = null;
+        if (type === 'like') {
+          const reciprocal = await this.fetch('GET', `interactions?fromId=eq.${encodeURIComponent(toId)}&toId=eq.${encodeURIComponent(fromId)}&type=eq.like`);
+          if (reciprocal && reciprocal.length > 0) {
+            const existing = await this.fetch('GET', `matches?or=(user1Id.eq.${encodeURIComponent(fromId)},user2Id.eq.${encodeURIComponent(fromId)})`);
+            const already = existing.some(m =>
+              (m.user1Id === fromId && m.user2Id === toId) || (m.user1Id === toId && m.user2Id === fromId)
+            );
+            if (!already) {
+              const matchBody = { id: genId(), user1Id: fromId, user2Id: toId, created_at: new Date().toISOString() };
+              await this.fetch('POST', 'matches', { body: matchBody });
+              match = matchBody;
+            }
+          }
+        }
+        return { interactionId: body.id, match };
+      }
+
+      // ─── Matches ───────────────────────────────────────
+      async getMatchesByUser(userId) {
+        return this.fetch('GET', `matches?or=(user1Id.eq.${encodeURIComponent(userId)},user2Id.eq.${encodeURIComponent(userId)})&order=createdAt.desc`);
+      }
+
+      // ─── Admin ─────────────────────────────────────────
+      async getAdminStats() {
+        const [users, matches, interactions] = await Promise.all([
+          this.fetch('GET', `profiles?role=neq.admin&select=id`, { count: true }),
+          this.fetch('GET', `matches?select=id`, { count: true }),
+          this.fetch('GET', `interactions?select=id`, { count: true })
+        ]);
+        return {
+          users: typeof users === 'object' && users.count !== undefined ? users.count : (Array.isArray(users) ? users.length : 0),
+          matches: typeof matches === 'object' && matches.count !== undefined ? matches.count : (Array.isArray(matches) ? matches.length : 0),
+          interactions: typeof interactions === 'object' && interactions.count !== undefined ? interactions.count : (Array.isArray(interactions) ? interactions.length : 0)
+        };
+      }
+      async adminDeleteProfile(id) {
+        await this.fetch('DELETE', `interactions?or=(fromId.eq.${encodeURIComponent(id)},toId.eq.${encodeURIComponent(id)})`);
+        await this.fetch('DELETE', `matches?or=(user1Id.eq.${encodeURIComponent(id)},user2Id.eq.${encodeURIComponent(id)})`);
+        await this.fetch('DELETE', `profiles?id=eq.${encodeURIComponent(id)}`);
+      }
+    }
+
+    // ==============================================================
+    //   CAPA 3: Data Layer Unificado
+    // ==============================================================
+    const data = {
+      mode: 'indexeddb',  // 'indexeddb' | 'supabase'
+      db: null,
+      mini: null,
+      supabase: null,
+
+      async init() {
+        this.supabase = new SupabaseDB();
+        if (this.supabase.loadConfig()) {
+          this.mode = 'supabase';
+          return;
+        }
+        this.mini = new MiniSQL('RumbadooDB', 1);
+        const stores = [
+          { name: 'profiles', key: 'id', indexes: [{ name: 'by_name', key: 'name' }] },
+          { name: 'interactions', key: 'id', indexes: [{ name: 'by_from', key: 'fromId' }, { name: 'by_to', key: 'toId' }] },
+          { name: 'matches', key: 'id', indexes: [{ name: 'by_user1', key: 'user1Id' }, { name: 'by_user2', key: 'user2Id' }] }
+        ];
+        await this.mini.open(stores);
+
+        // Crear admin por defecto en IndexedDB
+        const admins = await this.mini.select('profiles', { index: 'by_name', value: '__admin__' });
+        if (!admins || admins.length === 0) {
+          await this.mini.insert('profiles', {
+            id: 'admin_' + genId(),
+            name: '__admin__',
+            password: hashPass('admin123'),
+            role: 'admin',
+            createdAt: new Date().toISOString()
+          });
+        }
+        this.mode = 'indexeddb';
+      },
+
+      // ─── Perfiles ──────────────────────────────────────
+      async getProfile(id) {
+        if (this.mode === 'supabase') return this.supabase.getProfile(id);
+        return this.mini.select('profiles', { id });
+      },
+      async getProfileByName(name) {
+        if (this.mode === 'supabase') return this.supabase.getProfileByName(name);
+        const rows = await this.mini.select('profiles', { index: 'by_name', value: name });
+        return rows?.[0] || null;
+      },
+      async getAllProfiles(excludeId) {
+        if (this.mode === 'supabase') return this.supabase.getAllProfiles(excludeId);
+        const all = await this.mini.selectAll('profiles');
+        return (all || []).filter(p => p.id !== excludeId && p.role !== 'admin');
+      },
+      async createProfile(data) {
+        if (this.mode === 'supabase') return this.supabase.createProfile(data);
+        await this.mini.insert('profiles', data);
+        return data;
+      },
+      async updateProfile(id, data) {
+        if (this.mode === 'supabase') return this.supabase.updateProfile(id, data);
+        data.id = id;
+        await this.mini.update('profiles', data);
+        return data;
+      },
+      async deleteProfile(id) {
+        if (this.mode === 'supabase') return this.supabase.deleteProfile(id);
+        // En IndexedDB no hay CASCADE, limpiar manualmente
+        const allI = await this.mini.selectAll('interactions') || [];
+        for (const i of allI) {
+          if (i.fromId === id || i.toId === id) await this.mini.delete('interactions', i.id);
+        }
+        const allM = await this.mini.selectAll('matches') || [];
+        for (const m of allM) {
+          if (m.user1Id === id || m.user2Id === id) await this.mini.delete('matches', m.id);
+        }
+        await this.mini.delete('profiles', id);
+      },
+
+      // ─── Interacciones ─────────────────────────────────
+      async getInteractionsByUser(userId) {
+        if (this.mode === 'supabase') return this.supabase.getInteractionsByUser(userId);
+        const all = await this.mini.selectAll('interactions') || [];
+        return all.filter(i => i.fromId === userId);
+      },
+      async createInteraction(fromId, toId, type) {
+        if (this.mode === 'supabase') return this.supabase.createInteraction(fromId, toId, type);
+
+        const id = genId();
+        const interaction = { id, fromId, toId, type, createdAt: new Date().toISOString() };
+        await this.mini.insert('interactions', interaction);
+
+        let match = null;
+        if (type === 'like') {
+          const theirLikes = await this.mini.select('interactions', { index: 'by_from', value: toId }) || [];
+          const theyLikeMe = theirLikes.some(i => i.toId === fromId && i.type === 'like');
+          if (theyLikeMe) {
+            const existing = await this.mini.selectAll('matches') || [];
+            const already = existing.some(m => (m.user1Id === fromId && m.user2Id === toId) || (m.user1Id === toId && m.user2Id === fromId));
+            if (!already) {
+              const mid = genId();
+              match = { id: mid, user1Id: fromId, user2Id: toId, createdAt: new Date().toISOString() };
+              await this.mini.insert('matches', match);
+            }
+          }
+        }
+        return { interactionId: id, match };
+      },
+
+      // ─── Matches ───────────────────────────────────────
+      async getMatchesByUser(userId) {
+        if (this.mode === 'supabase') return this.supabase.getMatchesByUser(userId);
+        const all = await this.mini.selectAll('matches') || [];
+        return all.filter(m => m.user1Id === userId || m.user2Id === userId);
+      },
+
+      // ─── Admin ─────────────────────────────────────────
+      async getAdminStats() {
+        if (this.mode === 'supabase') return this.supabase.getAdminStats();
+        const allProfiles = await this.mini.selectAll('profiles') || [];
+        const allMatches = await this.mini.selectAll('matches') || [];
+        const allInteractions = await this.mini.selectAll('interactions') || [];
+        return {
+          users: allProfiles.filter(p => p.role !== 'admin').length,
+          matches: allMatches.length,
+          interactions: allInteractions.length
+        };
+      },
+      async adminDeleteProfile(id) {
+        if (this.mode === 'supabase') return this.supabase.adminDeleteProfile(id);
+        return this.deleteProfile(id);
+      },
+
+      // ─── Configuración ─────────────────────────────────
+      configureSupabase(url, key) {
+        this.supabase.configure(url, key);
+        this.mode = 'supabase';
+      },
+      clearSupabase() {
+        this.supabase.clearConfig();
+        this.mode = 'indexeddb';
+      },
+      isSupabaseReady() { return this.supabase.ready; }
+    };
+
+    // ==============================================================
+    //   ESTADO GLOBAL
+    // ==============================================================
     let currentUser = null;
     let isSwiping = false;
+    let loading = false;
 
-    // ─── Referencias DOM ─────────────────────────────────────
+    // ==============================================================
+    //   REFERENCIAS DOM
+    // ==============================================================
     const authScreen       = $('auth-screen');
     const mainScreen       = $('main-screen');
     const loginForm        = $('login-form');
@@ -1212,7 +1539,6 @@
     const matchContinue    = $('match-continue');
     const matchesBadge     = $('matches-badge');
     const adminScreen      = $('admin-screen');
-    const adminBody        = $('admin-body');
     const adminClose       = $('admin-close');
     const editOverlay      = $('edit-overlay');
     const editForm         = $('edit-form');
@@ -1226,27 +1552,87 @@
     const editCancel       = $('edit-cancel');
 
     // ==============================================================
+    //   CONFIGURACIÓN SUPABASE
+    // ==============================================================
+    function showConfigModal() {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(45,27,105,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease;';
+      overlay.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(74,44,138,.25);animation:bounceIn .4s ease backwards;">
+          <div style="text-align:center;font-size:48px;margin-bottom:4px;">☁️</div>
+          <h2 style="font-size:20px;font-weight:800;color:#4a2c8a;text-align:center;margin-bottom:4px;">Conectar a la nube</h2>
+          <p style="font-size:13px;color:#71717a;text-align:center;margin-bottom:20px;">
+            Todos los datos se sincronizarán entre dispositivos.
+            ${data.mode === 'indexeddb' ? 'Ahora estás en <strong>modo local</strong> (IndexedDB).' : 'Ya estás conectado a Supabase.'}
+          </p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <label style="font-size:13px;font-weight:700;color:#4a2c8a;">URL del proyecto Supabase</label>
+            <input id="cfg-url" style="padding:12px 16px;border:2px solid #ede9fe;border-radius:12px;font-family:Nunito,sans-serif;font-size:14px;outline:none;" placeholder="https://xxxxx.supabase.co" value="${data.supabase.url || ''}">
+            <label style="font-size:13px;font-weight:700;color:#4a2c8a;">Anon Key (pública)</label>
+            <input id="cfg-key" style="padding:12px 16px;border:2px solid #ede9fe;border-radius:12px;font-family:Nunito,sans-serif;font-size:14px;outline:none;" placeholder="eyJhbGciOi..." value="${data.supabase.key || ''}">
+            <div style="display:flex;gap:10px;margin-top:4px;">
+              <button id="cfg-cancel" style="flex:1;padding:14px;border:2px solid #ede9fe;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:#71717a;background:white;cursor:pointer;">Cancelar</button>
+              ${data.mode === 'supabase' ? `<button id="cfg-clear" style="flex:1;padding:14px;border:none;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:white;background:#f43f5e;cursor:pointer;">Desconectar</button>` : ''}
+              <button id="cfg-save" style="flex:1;padding:14px;border:none;border-radius:9999px;font-family:Nunito,sans-serif;font-size:14px;font-weight:800;color:white;background:linear-gradient(135deg,#8b5cf6,#7c3aed);cursor:pointer;box-shadow:0 4px 16px rgba(139,92,246,.35);">Conectar</button>
+            </div>
+            <p id="cfg-error" style="font-size:12px;color:#f43f5e;text-align:center;min-height:18px;"></p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const animStyle = document.createElement('style');
+      animStyle.textContent = '@keyframes bounceIn{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}';
+      document.head.appendChild(animStyle);
+
+      overlay.querySelector('#cfg-cancel').onclick = () => overlay.remove();
+      overlay.querySelector('#cfg-cancel').onclick = () => { overlay.remove(); animStyle.remove(); };
+      overlay.querySelector('#cfg-save').onclick = async () => {
+        const url = overlay.querySelector('#cfg-url').value.trim();
+        const key = overlay.querySelector('#cfg-key').value.trim();
+        const err = overlay.querySelector('#cfg-error');
+        if (!url || !key) { err.textContent = 'Completa ambos campos.'; return; }
+        if (!url.startsWith('https://')) { err.textContent = 'La URL debe empezar con https://'; return; }
+
+        // Probar conexión
+        try {
+          const testSupabase = new SupabaseDB();
+          testSupabase.configure(url, key);
+          await testSupabase.fetch('GET', 'profiles?select=id&limit=1');
+        } catch (e) {
+          err.textContent = 'No se pudo conectar. Verifica los datos.';
+          return;
+        }
+
+        data.configureSupabase(url, key);
+        overlay.remove();
+        animStyle.remove();
+        alert('☁️ ¡Conectado a Supabase! Los datos se sincronizarán entre dispositivos.\n\nRecarga la página para aplicar los cambios.');
+        location.reload();
+      };
+
+      const clearBtn = overlay.querySelector('#cfg-clear');
+      if (clearBtn) {
+        clearBtn.onclick = () => {
+          if (!confirm('¿Desconectar Supabase? Los datos locales no se perderán.')) return;
+          data.clearSupabase();
+          overlay.remove();
+          animStyle.remove();
+          location.reload();
+        };
+      }
+    }
+
+    // ==============================================================
     //   INICIALIZACIÓN
     // ==============================================================
     async function init() {
-      // Detectar si se abrió desde el sistema de archivos
-      if (window.location.protocol === 'file:') {
-        document.body.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:var(--font);background:linear-gradient(135deg,#2d1b69,#4a2c8a);color:white;padding:40px;text-align:center;">
-            <div style="font-size:64px;margin-bottom:16px;">💜</div>
-            <h1 style="font-size:28px;font-weight:900;margin-bottom:8px;">Rumbadoo</h1>
-            <p style="font-size:16px;opacity:.9;margin-bottom:24px;max-width:400px;">
-              Esta app necesita un servidor. Ejecuta estos comandos:
-            </p>
-            <pre style="background:rgba(255,255,255,.1);padding:16px 24px;border-radius:12px;font-size:14px;text-align:left;line-height:1.8;">
-  cd Rumbadoo
-  npm install
-  node server.js</pre>
-            <p style="margin-top:24px;font-size:14px;opacity:.7;">
-              Luego abre <strong>http://localhost:3000</strong> en tu navegador
-            </p>
-          </div>
-        `;
+      try {
+        await data.init();
+      } catch (e) {
+        document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Nunito,sans-serif;background:linear-gradient(135deg,#2d1b69,#4a2c8a);color:white;padding:40px;text-align:center;font-size:16px;">
+          <p>Error al inicializar la base de datos: ${e.message}</p>
+        </div>`;
         return;
       }
 
@@ -1254,13 +1640,13 @@
       if (saved) {
         try {
           const sid = JSON.parse(saved);
-          const data = await api('/profile/' + encodeURIComponent(sid));
-          if (data) {
-            currentUser = data;
+          const profile = await data.getProfile(sid);
+          if (profile) {
+            currentUser = profile;
             showMainScreen();
             return;
           }
-        } catch(e) {}
+        } catch(e) { /* sesión expirada */ }
       }
       showAuthScreen();
     }
@@ -1282,9 +1668,7 @@
 
       localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
 
-      // Si es admin, mostrar botón especial
       if (currentUser.role === 'admin') {
-        // Admin no usa la app normal, redirigir al panel
         showAdminPanel();
         return;
       }
@@ -1313,7 +1697,6 @@
       authError.textContent = '';
     });
 
-    // Login
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = $('login-name').value.trim();
@@ -1322,11 +1705,24 @@
       if (!name || !pass) { authError.textContent = 'Completa todos los campos.'; return; }
 
       try {
-        const data = await api('/login', {
-          method: 'POST',
-          body: JSON.stringify({ name, password: pass })
-        });
-        currentUser = data.profile;
+        // Admin login
+        if (name.toLowerCase() === 'admin') {
+          const admin = await data.getProfileByName('__admin__');
+          if (admin && admin.password === hashPass(pass)) {
+            currentUser = admin;
+            localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
+            showMainScreen();
+            return;
+          }
+          authError.textContent = 'Credenciales de admin inválidas.';
+          return;
+        }
+
+        const profile = await data.getProfileByName(name);
+        if (!profile) { authError.textContent = 'Ese usuario no existe.'; return; }
+        if (profile.password !== hashPass(pass)) { authError.textContent = 'Contraseña incorrecta.'; return; }
+
+        currentUser = profile;
         localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
         showMainScreen();
       } catch (err) {
@@ -1334,7 +1730,6 @@
       }
     });
 
-    // Registro
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name   = $('reg-name').value.trim();
@@ -1348,14 +1743,26 @@
       if (pass.length < 4) { authError.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
       if (!age || age < 18) { authError.textContent = 'Debes tener al menos 18 años.'; return; }
 
+      const existing = await data.getProfileByName(name);
+      if (existing) { authError.textContent = 'Ese nombre ya está en uso. Elige otro.'; return; }
+
       if (!photo) photo = avatarUrl(name);
 
+      const profile = {
+        id: genId(),
+        name,
+        password: hashPass(pass),
+        age,
+        gender,
+        bio: bio || 'Nuevo en Rumbadoo 💜',
+        photo,
+        role: 'user',
+        createdAt: new Date().toISOString()
+      };
+
       try {
-        const data = await api('/register', {
-          method: 'POST',
-          body: JSON.stringify({ name, password: pass, age, gender, bio, photo })
-        });
-        currentUser = data.profile;
+        await data.createProfile(profile);
+        currentUser = profile;
         localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
         showMainScreen();
       } catch (err) {
@@ -1363,7 +1770,6 @@
       }
     });
 
-    // Preview avatar
     $('reg-photo').addEventListener('input', function() {
       const val = this.value.trim();
       if (val) { $('avatar-preview').src = val; }
@@ -1375,7 +1781,6 @@
       }
     });
 
-    // Logout
     $('btn-logout').addEventListener('click', () => {
       currentUser = null;
       localStorage.removeItem('rumbadoo_session');
@@ -1383,17 +1788,20 @@
     });
 
     // ==============================================================
-    //   DESCUBRIR — Cargar perfiles
+    //   DESCUBRIR
     // ==============================================================
     async function loadDiscover() {
-      if (!currentUser || currentUser.role === 'admin') return;
+      if (!currentUser || currentUser.role === 'admin' || loading) return;
+      loading = true;
 
       try {
-        const profiles = await api('/profiles?exclude=' + encodeURIComponent(currentUser.id));
-        const interactions = await api('/interactions/' + encodeURIComponent(currentUser.id));
+        const [profiles, interactions] = await Promise.all([
+          data.getAllProfiles(currentUser.id),
+          data.getInteractionsByUser(currentUser.id)
+        ]);
 
         const interactedIds = new Set((interactions || []).map(i => i.toId));
-        let available = (profiles || []).filter(p => !interactedIds.has(p.id) && p.role !== 'admin');
+        let available = (profiles || []).filter(p => !interactedIds.has(p.id));
 
         if (available.length === 0) {
           cardStack.innerHTML = '';
@@ -1408,6 +1816,8 @@
         showCard(available[0]);
       } catch(e) {
         console.error('Error cargando perfiles:', e);
+      } finally {
+        loading = false;
       }
     }
 
@@ -1416,7 +1826,6 @@
       const card = document.createElement('div');
       card.className = 'profile-card';
       card.dataset.profileId = profile.id;
-
       card.innerHTML = `
         <img class="card-bg" src="${profile.photo}" alt="${profile.name}" draggable="false">
         <div class="card-overlay"></div>
@@ -1447,31 +1856,26 @@
       };
 
       const onStart = (x, y) => {
-        if (isSwiping) return;
+        if (isSwiping || loading) return;
         isDragging = true;
         swipeStartX = x; swipeStartY = y;
         card.classList.add('swiping');
         currentCard = card;
       };
-
       const onMove = (x, y) => {
         if (!isDragging || !currentCard) return;
         const dx = x - swipeStartX;
-        const dy = y - swipeStartY;
-        currentCard.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.08}deg)`;
+        currentCard.style.transform = `translate(${dx}px, ${y - swipeStartY}px) rotate(${dx * 0.08}deg)`;
         if (dx > 30) { indicators.like.classList.add('show'); indicators.nope.classList.remove('show'); }
         else if (dx < -30) { indicators.nope.classList.add('show'); indicators.like.classList.remove('show'); }
         else { indicators.like.classList.remove('show'); indicators.nope.classList.remove('show'); }
       };
-
       const onEnd = () => {
         if (!isDragging || !currentCard) return;
         isDragging = false;
         indicators.like.classList.remove('show');
         indicators.nope.classList.remove('show');
-
-        const rect = currentCard.getBoundingClientRect();
-        const dx = (rect.left + rect.width / 2) - (window.innerWidth / 2);
+        const dx = (currentCard.getBoundingClientRect().left + currentCard.offsetWidth / 2) - (window.innerWidth / 2);
 
         if (Math.abs(dx) > 80) {
           handleAction(currentCard.dataset.profileId, dx > 0 ? 'like' : 'pass');
@@ -1485,17 +1889,16 @@
       card.addEventListener('mousedown', e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
       document.addEventListener('mousemove', e => { if (isDragging) onMove(e.clientX, e.clientY); });
       document.addEventListener('mouseup', () => { if (isDragging) onEnd(); });
-
       card.addEventListener('touchstart', e => { const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
       card.addEventListener('touchmove', e => { if (isDragging) { const t = e.touches[0]; onMove(t.clientX, t.clientY); } }, { passive: true });
       card.addEventListener('touchend', () => { if (isDragging) onEnd(); }, { passive: true });
     }
 
     // ==============================================================
-    //   ACCIONES: Like / Pass
+    //   ACCIONES
     // ==============================================================
     async function handleAction(profileId, type) {
-      if (isSwiping) return;
+      if (isSwiping || loading) return;
       isSwiping = true;
 
       const card = document.querySelector('.profile-card');
@@ -1508,18 +1911,10 @@
 
       setTimeout(async () => {
         try {
-          const data = await api('/interactions', {
-            method: 'POST',
-            body: JSON.stringify({
-              fromId: currentUser.id,
-              toId: profileId,
-              type: type
-            })
-          });
+          const result = await data.createInteraction(currentUser.id, profileId, type);
 
-          // Si hay match, mostrar modal
-          if (data.match) {
-            const theirProfile = await api('/profile/' + encodeURIComponent(profileId));
+          if (result.match) {
+            const theirProfile = await data.getProfile(profileId);
             if (theirProfile) {
               matchMyAvatar.src = currentUser.photo;
               matchTheirAvatar.src = theirProfile.photo;
@@ -1561,11 +1956,13 @@
     // ==============================================================
     //   MATCHES
     // ==============================================================
+    let matchesCache = {};
+
     async function loadMatches() {
       if (!currentUser || currentUser.role === 'admin') return;
 
       try {
-        const allMatches = await api('/matches/' + encodeURIComponent(currentUser.id)) || [];
+        const allMatches = await data.getMatchesByUser(currentUser.id) || [];
 
         matchesGrid.innerHTML = '';
 
@@ -1578,22 +1975,21 @@
         matchesEmpty.classList.add('hidden');
         matchCount.textContent = allMatches.length;
 
-        for (let i = 0; i < allMatches.length; i++) {
-          const m = allMatches[i];
-          const otherId = m.user1Id === currentUser.id ? m.user2Id : m.user1Id;
-          const profile = await api('/profile/' + encodeURIComponent(otherId));
-          if (!profile) continue;
+        const profileIds = allMatches.map(m => m.user1Id === currentUser.id ? m.user2Id : m.user1Id);
+        const profiles = await Promise.all(profileIds.map(id => data.getProfile(id).catch(() => null)));
 
+        profiles.forEach((p, i) => {
+          if (!p) return;
           const div = document.createElement('div');
           div.className = 'match-card';
           div.style.animationDelay = `${i * 0.08}s`;
           div.innerHTML = `
-            <img src="${profile.photo}" alt="${profile.name}" loading="lazy">
-            <div class="match-name">${profile.name}</div>
-            <div class="match-age">${profile.age} años 💜</div>
+            <img src="${p.photo}" alt="${p.name}" loading="lazy">
+            <div class="match-name">${p.name}</div>
+            <div class="match-age">${p.age} años 💜</div>
           `;
           matchesGrid.appendChild(div);
-        }
+        });
       } catch(e) {
         console.error('Error cargando matches:', e);
       }
@@ -1646,48 +2042,59 @@
     async function renderBadges() {
       if (!currentUser || currentUser.role === 'admin') return;
       try {
-        const allMatches = await api('/matches/' + encodeURIComponent(currentUser.id)) || [];
-        const count = allMatches.length;
-        if (count > 0) { matchesBadge.textContent = count; matchesBadge.classList.remove('hidden'); }
+        const allMatches = await data.getMatchesByUser(currentUser.id) || [];
+        if (allMatches.length > 0) { matchesBadge.textContent = allMatches.length; matchesBadge.classList.remove('hidden'); }
         else { matchesBadge.classList.add('hidden'); }
       } catch(e) { /* ignore */ }
     }
 
     // ==============================================================
-    //   LIKES (popup informativo)
+    //   LIKES POPUP
     // ==============================================================
     $('btn-likes').addEventListener('click', async () => {
       if (!currentUser) return;
       try {
-        const myLikes = await api('/likes/' + encodeURIComponent(currentUser.id)) || [];
+        const allInteractions = await data.getInteractionsByUser(currentUser.id) || [];
+        const myLikes = allInteractions.filter(i => i.type === 'like');
         if (myLikes.length === 0) {
           alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');
           return;
         }
 
-        const allMatches = await api('/matches/' + encodeURIComponent(currentUser.id)) || [];
+        const allMatches = await data.getMatchesByUser(currentUser.id) || [];
         let msg = '💜 Personas que te gustaron:\n\n';
 
-        for (const like of myLikes) {
-          const p = await api('/profile/' + encodeURIComponent(like.toId));
-          if (p) {
-            const isMatch = allMatches.some(m =>
-              (m.user1Id === currentUser.id && m.user2Id === p.id) ||
-              (m.user1Id === p.id && m.user2Id === currentUser.id)
-            );
-            msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
-          }
-        }
+        const profiles = await Promise.all(myLikes.map(l => data.getProfile(l.toId).catch(() => null)));
+        profiles.forEach((p, i) => {
+          if (!p) return;
+          const isMatch = allMatches.some(m => (m.user1Id === currentUser.id && m.user2Id === p.id) || (m.user1Id === p.id && m.user2Id === currentUser.id));
+          msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
+        });
         msg += `\nTotal: ${myLikes.length} likes`;
         alert(msg);
       } catch(e) { alert('Error al cargar likes.'); }
     });
 
     // ==============================================================
+    //   BOTÓN CONFIGURACIÓN NUBE (en header)
+    // ==============================================================
+    // Añadir botón de nube al header
+    (function addCloudBtn() {
+      const headerActions = document.querySelector('.header-actions');
+      if (!headerActions) return;
+      const btn = document.createElement('button');
+      btn.className = 'header-btn';
+      btn.id = 'btn-cloud';
+      btn.title = 'Configurar nube';
+      btn.textContent = '☁️';
+      btn.style.fontSize = '16px';
+      headerActions.insertBefore(btn, headerActions.firstChild);
+      btn.addEventListener('click', showConfigModal);
+    })();
+
+    // ==============================================================
     //   EDITAR PERFIL
     // ==============================================================
-
-    // Abrir modal de edición
     $('btn-profile').addEventListener('click', () => {
       if (!currentUser) return;
       const u = currentUser;
@@ -1701,29 +2108,22 @@
       editOverlay.classList.remove('hidden');
     });
 
-    // Cerrar modal
     editCancel.addEventListener('click', () => editOverlay.classList.add('hidden'));
     editOverlay.addEventListener('click', e => { if (e.target === editOverlay) editOverlay.classList.add('hidden'); });
 
-    // Subir foto desde archivo
     editPhotoFile.addEventListener('change', function() {
       const file = this.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
-        editPhotoPreview.src = e.target.result;
-        editPhotoUrl.value = '';
-      };
+      reader.onload = function(e) { editPhotoPreview.src = e.target.result; editPhotoUrl.value = ''; };
       reader.readAsDataURL(file);
     });
 
-    // Foto por URL
     editPhotoUrl.addEventListener('input', function() {
       const val = this.value.trim();
       if (val) editPhotoPreview.src = val;
     });
 
-    // Guardar cambios
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!currentUser) return;
@@ -1741,11 +2141,14 @@
       if (urlVal) photo = urlVal;
 
       try {
-        const data = await api('/profile/' + encodeURIComponent(currentUser.id), {
-          method: 'PUT',
-          body: JSON.stringify({ name, age, gender, bio, photo })
-        });
-        currentUser = data.profile;
+        if (name !== currentUser.name) {
+          const dup = await data.getProfileByName(name);
+          if (dup) { alert('Ese nombre ya está en uso.'); return; }
+        }
+
+        const updated = { ...currentUser, name, age, gender, bio: bio || 'Nuevo en Rumbadoo 💜', photo };
+        await data.updateProfile(currentUser.id, updated);
+        currentUser = updated;
         editOverlay.classList.add('hidden');
         alert('💜 ¡Perfil actualizado correctamente!');
       } catch (err) {
@@ -1760,11 +2163,9 @@
       btn.addEventListener('click', async () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-
         btn.classList.add('active');
         const pane = document.getElementById(btn.dataset.tab + '-pane');
         if (pane) pane.classList.add('active');
-
         if (btn.dataset.tab === 'matches') await loadMatches();
       });
     });
@@ -1782,32 +2183,23 @@
     async function refreshAdminPanel() {
       try {
         const [stats, profiles] = await Promise.all([
-          api('/admin/stats'),
-          api('/profiles')
+          data.getAdminStats(),
+          data.getAllProfiles()
         ]);
 
         const users = (profiles || []).filter(p => p.role !== 'admin');
 
         $('admin-stats').innerHTML = `
-          <div class="admin-stat-card">
-            <div class="num">${stats.users}</div>
-            <div class="label">Usuarios</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="num">${stats.matches}</div>
-            <div class="label">Matches</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="num">${stats.interactions}</div>
-            <div class="label">Interacciones</div>
-          </div>
+          <div class="admin-stat-card"><div class="num">${stats.users}</div><div class="label">Usuarios</div></div>
+          <div class="admin-stat-card"><div class="num">${stats.matches}</div><div class="label">Matches</div></div>
+          <div class="admin-stat-card"><div class="num">${stats.interactions}</div><div class="label">Interacciones</div></div>
         `;
 
         const list = $('admin-profile-list');
         list.innerHTML = '';
 
         if (users.length === 0) {
-          list.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No hay usuarios registrados.</p>';
+          list.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No hay usuarios.</p>';
           return;
         }
 
@@ -1818,36 +2210,30 @@
             <img src="${u.photo}" alt="${u.name}">
             <div class="info">
               <div class="name">${u.name}</div>
-              <div class="detail">${u.age} años · ${u.gender || '—'} · Creado: ${new Date(u.createdAt).toLocaleDateString()}</div>
+              <div class="detail">${u.age || '?'} años · ${u.gender || '—'} · ${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ''}</div>
             </div>
             <button class="admin-del-btn" data-id="${u.id}">Eliminar</button>
           `;
           list.appendChild(div);
-
           div.querySelector('.admin-del-btn').addEventListener('click', async () => {
-            if (!confirm(`¿Eliminar a ${u.name}? Esto también borrará sus interacciones y matches.`)) return;
-            await api('/admin/profile/' + encodeURIComponent(u.id), { method: 'DELETE' });
+            if (!confirm(`¿Eliminar a ${u.name}?`)) return;
+            await data.adminDeleteProfile(u.id);
             await refreshAdminPanel();
           });
         });
       } catch(e) {
-        console.error('Error en admin panel:', e);
+        console.error('Error admin:', e);
       }
     }
 
     adminClose.addEventListener('click', () => {
       adminScreen.classList.add('hidden');
-      if (currentUser) {
-        if (currentUser.role === 'admin') {
-          // Admin vuelve al auth
-          currentUser = null;
-          localStorage.removeItem('rumbadoo_session');
-          showAuthScreen();
-        } else {
-          showMainScreen();
-        }
-      } else {
+      if (currentUser && currentUser.role === 'admin') {
+        currentUser = null;
+        localStorage.removeItem('rumbadoo_session');
         showAuthScreen();
+      } else {
+        showMainScreen();
       }
     });
 

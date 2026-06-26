@@ -1,3 +1,4 @@
 node_modules/
 rumbadoo.db
 *.log
+.DS_Store
