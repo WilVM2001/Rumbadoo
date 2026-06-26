@@ -418,24 +418,28 @@ async getProfileByNameExact(name){
   const r=await this.mini.select('profiles',{index:'by_name',value:name});return r?.[0]||null
 },
 async register(data){
+  // data.password debe ser la contraseña en texto plano
   if(this.isApi()){
     const r=await this.api.api('/register',{method:'POST',body:JSON.stringify(data)});
     return r.profile||null
   }
   data.id=genId();data.role='user';data.createdAt=new Date().toISOString();
+  data.password=hashPass(data.password); // hash para IndexedDB
   await this.mini.insert('profiles',data);return data
 },
 async login(name,password){
+  // password en texto plano
   if(this.isApi()){
     const r=await this.api.api('/login',{method:'POST',body:JSON.stringify({name,password})});
     return r.profile||null
   }
+  const hp=hashPass(password);
   if(name==='admin'){
     const a=await this.mini.select('profiles',{index:'by_name',value:'__admin__'});
-    if(a&&a[0]&&a[0].password===password)return a[0];return null
+    if(a&&a[0]&&a[0].password===hp)return a[0];return null
   }
   const p=await this.mini.select('profiles',{index:'by_name',value:name});
-  if(p&&p[0]&&p[0].password===password)return p[0];return null
+  if(p&&p[0]&&p[0].password===hp)return p[0];return null
 },
 async updateProfile(id,data){
   if(this.isApi()){
@@ -563,7 +567,7 @@ loginForm.onsubmit=async e=>{
   const name=$('login-name').value.trim(),pass=$('login-pass').value;
   if(!name||!pass){authErr.textContent='Completa todos los campos.';return}
   try{
-    const profile=await data.login(name,hashPass(pass));
+    const profile=await data.login(name,pass);
     if(!profile){authErr.textContent=name==='admin'?'Credenciales inválidas.':'Usuario o contraseña incorrectos.';return}
     currentUser=profile;localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
   }catch(e){authErr.textContent=e.message}
@@ -580,7 +584,7 @@ registerForm.onsubmit=async e=>{
   if(dup){authErr.textContent='Ese nombre ya está en uso.';return}
   if(!photo)photo=avatarUrl(name);
   try{
-    const profile=await data.register({name,password:hashPass(pass),age,gender,bio:bio||'Nuevo en Rumbadoo 💜',photo});
+    const profile=await data.register({name,password:pass,age,gender,bio:bio||'Nuevo en Rumbadoo 💜',photo});
     currentUser=profile;localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
   }catch(e){authErr.textContent=e.message}
 }
