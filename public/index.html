@@ -1144,130 +1144,24 @@
 
   <script>
     /* ==============================================================
-       RUMBADOO — MiniSQL + App
+       RUMBADOO — App con backend real (Express + SQLite)
        ============================================================== */
 
-    // ==============================================================
-    //   MINISQL — Capa de base de datos sobre IndexedDB
-    //   Permite: insertar, seleccionar, actualizar, eliminar
-    // ==============================================================
-    class MiniSQL {
-      constructor(dbName, version) {
-        this.dbName = dbName;
-        this.version = version;
-        this.db = null;
-      }
+    // ─── Configuración de la API ──────────────────────────────
+    const API = window.location.origin + '/api';
 
-      open(stores) {
-        return new Promise((resolve, reject) => {
-          const req = indexedDB.open(this.dbName, this.version);
-
-          req.onupgradeneeded = (ev) => {
-            const db = ev.target.result;
-            stores.forEach(s => {
-              if (!db.objectStoreNames.contains(s.name)) {
-                const store = db.createObjectStore(s.name, { keyPath: s.key || 'id', autoIncrement: !!s.auto });
-                if (s.indexes) {
-                  s.indexes.forEach(idx => store.createIndex(idx.name, idx.key, idx.opts || {}));
-                }
-              }
-            });
-          };
-
-          req.onsuccess = (ev) => {
-            this.db = ev.target.result;
-            resolve();
-          };
-
-          req.onerror = (ev) => reject(ev.target.error);
-        });
-      }
-
-      insert(storeName, data) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readwrite');
-          const store = tx.objectStore(storeName);
-          const req = store.put(data);
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      select(storeName, query) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readonly');
-          const store = tx.objectStore(storeName);
-          let req;
-          if (!query) {
-            req = store.getAll();
-          } else if (query.id) {
-            req = store.get(query.id);
-          } else if (query.index && query.value) {
-            const idx = store.index(query.index);
-            req = idx.getAll(query.value);
-          } else {
-            req = store.getAll();
-          }
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      selectAll(storeName) {
-        return this.select(storeName);
-      }
-
-      update(storeName, data) {
-        return this.insert(storeName, data);
-      }
-
-      delete(storeName, id) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readwrite');
-          const store = tx.objectStore(storeName);
-          const req = store.delete(id);
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      count(storeName) {
-        return new Promise((resolve, reject) => {
-          const tx = this.db.transaction(storeName, 'readonly');
-          const store = tx.objectStore(storeName);
-          const req = store.count();
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
+    async function api(path, opts = {}) {
+      const res = await fetch(API + path, {
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        ...opts
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error del servidor');
+      return data;
     }
 
-    // ==============================================================
-    //   INSTANCIA DE LA BD
-    // ==============================================================
-    const db = new MiniSQL('RumbadooDB', 1);
-
-    const STORE_PROFILES = 'profiles';
-    const STORE_INTERACTIONS = 'interactions';
-    const STORE_MATCHES = 'matches';
-
-    const STORES = [
-      { name: STORE_PROFILES, key: 'id', indexes: [{ name: 'by_name', key: 'name' }] },
-      { name: STORE_INTERACTIONS, key: 'id', indexes: [
-        { name: 'by_from', key: 'fromId' },
-        { name: 'by_to', key: 'toId' }
-      ]},
-      { name: STORE_MATCHES, key: 'id', indexes: [
-        { name: 'by_user1', key: 'user1Id' },
-        { name: 'by_user2', key: 'user2Id' }
-      ]}
-    ];
-
-    // ==============================================================
-    //   UTILERÍAS
-    // ==============================================================
+    // ─── Utilidades ──────────────────────────────────────────
     const $ = id => document.getElementById(id);
-    function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
     function avatarUrl(name) {
       const c = ['8b5cf6','7c3aed','6b3fa0','4a2c8a','a78bfa','c4b5fd','ddd6fe','e6d5f5','2d1b69'];
@@ -1280,15 +1174,11 @@
       return 'h' + Math.abs(h).toString(36);
     }
 
-    // ==============================================================
-    //   ESTADO GLOBAL
-    // ==============================================================
-    let currentUser = null;       // perfil logueado
+    // ─── Estado global ───────────────────────────────────────
+    let currentUser = null;
     let isSwiping = false;
 
-    // ==============================================================
-    //   REFERENCIAS DOM
-    // ==============================================================
+    // ─── Referencias DOM ─────────────────────────────────────
     const authScreen       = $('auth-screen');
     const mainScreen       = $('main-screen');
     const loginForm        = $('login-form');
@@ -1328,34 +1218,18 @@
     //   INICIALIZACIÓN
     // ==============================================================
     async function init() {
-      await db.open(STORES);
-
-      // Crear admin por defecto si no existe
-      const admins = await db.select(STORE_PROFILES, { index: 'by_name', value: '__admin__' });
-      if (!admins || admins.length === 0) {
-        await db.insert(STORE_PROFILES, {
-          id: 'admin_' + genId(),
-          name: '__admin__',
-          password: hashPass('admin123'),
-          role: 'admin',
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      // Intentar sesión guardada
       const saved = localStorage.getItem('rumbadoo_session');
       if (saved) {
         try {
           const sid = JSON.parse(saved);
-          const profile = await db.select(STORE_PROFILES, { id: sid });
-          if (profile) {
-            currentUser = profile;
+          const data = await api('/profile/' + encodeURIComponent(sid));
+          if (data) {
+            currentUser = data;
             showMainScreen();
             return;
           }
-        } catch(e) { /* ignore */ }
+        } catch(e) {}
       }
-
       showAuthScreen();
     }
 
@@ -1415,33 +1289,17 @@
 
       if (!name || !pass) { authError.textContent = 'Completa todos los campos.'; return; }
 
-      // Admin login
-      const admins = await db.select(STORE_PROFILES, { index: 'by_name', value: '__admin__' });
-      if (name.toLowerCase() === 'admin' && admins && admins.length > 0) {
-        const admin = admins[0];
-        if (admin.password === hashPass(pass)) {
-          currentUser = admin;
-          localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-          showMainScreen();
-          return;
-        }
+      try {
+        const data = await api('/login', {
+          method: 'POST',
+          body: JSON.stringify({ name, password: pass })
+        });
+        currentUser = data.profile;
+        localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
+        showMainScreen();
+      } catch (err) {
+        authError.textContent = err.message;
       }
-
-      const profiles = await db.select(STORE_PROFILES, { index: 'by_name', value: name });
-      if (!profiles || profiles.length === 0) {
-        authError.textContent = 'Ese usuario no existe.';
-        return;
-      }
-
-      const profile = profiles[0];
-      if (profile.password !== hashPass(pass)) {
-        authError.textContent = 'Contraseña incorrecta.';
-        return;
-      }
-
-      currentUser = profile;
-      localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-      showMainScreen();
     });
 
     // Registro
@@ -1458,31 +1316,19 @@
       if (pass.length < 4) { authError.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
       if (!age || age < 18) { authError.textContent = 'Debes tener al menos 18 años.'; return; }
 
-      // Verificar nombre único
-      const existing = await db.select(STORE_PROFILES, { index: 'by_name', value: name });
-      if (existing && existing.length > 0) {
-        authError.textContent = 'Ese nombre ya está en uso. Elige otro.';
-        return;
-      }
-
       if (!photo) photo = avatarUrl(name);
 
-      const profile = {
-        id: genId(),
-        name,
-        password: hashPass(pass),
-        age,
-        gender,
-        bio: bio || 'Nuevo en Rumbadoo 💜',
-        photo,
-        role: 'user',
-        createdAt: new Date().toISOString()
-      };
-
-      await db.insert(STORE_PROFILES, profile);
-      currentUser = profile;
-      localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
-      showMainScreen();
+      try {
+        const data = await api('/register', {
+          method: 'POST',
+          body: JSON.stringify({ name, password: pass, age, gender, bio, photo })
+        });
+        currentUser = data.profile;
+        localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
+        showMainScreen();
+      } catch (err) {
+        authError.textContent = err.message;
+      }
     });
 
     // Preview avatar
@@ -1510,32 +1356,27 @@
     async function loadDiscover() {
       if (!currentUser || currentUser.role === 'admin') return;
 
-      const allProfiles = await db.selectAll(STORE_PROFILES);
-      const interactions = await db.selectAll(STORE_INTERACTIONS);
+      try {
+        const profiles = await api('/profiles?exclude=' + encodeURIComponent(currentUser.id));
+        const interactions = await api('/interactions/' + encodeURIComponent(currentUser.id));
 
-      const myInteractions = (interactions || []).filter(i => i.fromId === currentUser.id);
-      const interactedIds = new Set(myInteractions.map(i => i.toId));
+        const interactedIds = new Set((interactions || []).map(i => i.toId));
+        let available = (profiles || []).filter(p => !interactedIds.has(p.id) && p.role !== 'admin');
 
-      // Perfiles disponibles: todos menos yo y los ya interactuados
-      let available = (allProfiles || []).filter(p =>
-        p.id !== currentUser.id &&
-        p.role !== 'admin' &&
-        !interactedIds.has(p.id)
-      );
+        if (available.length === 0) {
+          cardStack.innerHTML = '';
+          noMore.classList.remove('hidden');
+          cardActions.classList.add('hidden');
+          return;
+        }
 
-      if (available.length === 0) {
-        cardStack.innerHTML = '';
-        noMore.classList.remove('hidden');
-        cardActions.classList.add('hidden');
-        return;
+        noMore.classList.add('hidden');
+        cardActions.classList.remove('hidden');
+        available.sort(() => Math.random() - 0.5);
+        showCard(available[0]);
+      } catch(e) {
+        console.error('Error cargando perfiles:', e);
       }
-
-      noMore.classList.add('hidden');
-      cardActions.classList.remove('hidden');
-
-      // Mezclar para variedad
-      available.sort(() => Math.random() - 0.5);
-      showCard(available[0]);
     }
 
     function showCard(profile) {
@@ -1634,49 +1475,29 @@
       }
 
       setTimeout(async () => {
-        // Guardar interacción
-        const interaction = {
-          id: genId(),
-          fromId: currentUser.id,
-          toId: profileId,
-          type: type,
-          createdAt: new Date().toISOString()
-        };
-        await db.insert(STORE_INTERACTIONS, interaction);
+        try {
+          const data = await api('/interactions', {
+            method: 'POST',
+            body: JSON.stringify({
+              fromId: currentUser.id,
+              toId: profileId,
+              type: type
+            })
+          });
 
-        // Verificar match: ¿el otro usuario ya nos dio like?
-        if (type === 'like') {
-          const theirLikes = await db.select(STORE_INTERACTIONS, { index: 'by_from', value: profileId }) || [];
-          const theyLikedMe = theirLikes.some(i => i.toId === currentUser.id && i.type === 'like');
-
-          if (theyLikedMe) {
-            // Crear match (solo si no existe ya)
-            const existingMatches = await db.selectAll(STORE_MATCHES) || [];
-            const alreadyMatched = existingMatches.some(m =>
-              (m.user1Id === currentUser.id && m.user2Id === profileId) ||
-              (m.user1Id === profileId && m.user2Id === currentUser.id)
-            );
-
-            if (!alreadyMatched) {
-              const match = {
-                id: genId(),
-                user1Id: currentUser.id,
-                user2Id: profileId,
-                createdAt: new Date().toISOString()
-              };
-              await db.insert(STORE_MATCHES, match);
-
-              // Mostrar modal de match
-              const theirProfile = await db.select(STORE_PROFILES, { id: profileId });
-              if (theirProfile) {
-                matchMyAvatar.src = currentUser.photo;
-                matchTheirAvatar.src = theirProfile.photo;
-                matchModal.classList.remove('hidden');
-                spawnHearts();
-                spawnConfetti();
-              }
+          // Si hay match, mostrar modal
+          if (data.match) {
+            const theirProfile = await api('/profile/' + encodeURIComponent(profileId));
+            if (theirProfile) {
+              matchMyAvatar.src = currentUser.photo;
+              matchTheirAvatar.src = theirProfile.photo;
+              matchModal.classList.remove('hidden');
+              spawnHearts();
+              spawnConfetti();
             }
           }
+        } catch(e) {
+          console.error('Error en interacción:', e);
         }
 
         await loadDiscover();
@@ -1711,35 +1532,38 @@
     async function loadMatches() {
       if (!currentUser || currentUser.role === 'admin') return;
 
-      const allMatches = await db.selectAll(STORE_MATCHES) || [];
-      const myMatches = allMatches.filter(m => m.user1Id === currentUser.id || m.user2Id === currentUser.id);
+      try {
+        const allMatches = await api('/matches/' + encodeURIComponent(currentUser.id)) || [];
 
-      matchesGrid.innerHTML = '';
+        matchesGrid.innerHTML = '';
 
-      if (myMatches.length === 0) {
-        matchesEmpty.classList.remove('hidden');
-        matchCount.textContent = '0';
-        return;
-      }
+        if (allMatches.length === 0) {
+          matchesEmpty.classList.remove('hidden');
+          matchCount.textContent = '0';
+          return;
+        }
 
-      matchesEmpty.classList.add('hidden');
-      matchCount.textContent = myMatches.length;
+        matchesEmpty.classList.add('hidden');
+        matchCount.textContent = allMatches.length;
 
-      for (let i = 0; i < myMatches.length; i++) {
-        const m = myMatches[i];
-        const otherId = m.user1Id === currentUser.id ? m.user2Id : m.user1Id;
-        const profile = await db.select(STORE_PROFILES, { id: otherId });
-        if (!profile) continue;
+        for (let i = 0; i < allMatches.length; i++) {
+          const m = allMatches[i];
+          const otherId = m.user1Id === currentUser.id ? m.user2Id : m.user1Id;
+          const profile = await api('/profile/' + encodeURIComponent(otherId));
+          if (!profile) continue;
 
-        const div = document.createElement('div');
-        div.className = 'match-card';
-        div.style.animationDelay = `${i * 0.08}s`;
-        div.innerHTML = `
-          <img src="${profile.photo}" alt="${profile.name}" loading="lazy">
-          <div class="match-name">${profile.name}</div>
-          <div class="match-age">${profile.age} años 💜</div>
-        `;
-        matchesGrid.appendChild(div);
+          const div = document.createElement('div');
+          div.className = 'match-card';
+          div.style.animationDelay = `${i * 0.08}s`;
+          div.innerHTML = `
+            <img src="${profile.photo}" alt="${profile.name}" loading="lazy">
+            <div class="match-name">${profile.name}</div>
+            <div class="match-age">${profile.age} años 💜</div>
+          `;
+          matchesGrid.appendChild(div);
+        }
+      } catch(e) {
+        console.error('Error cargando matches:', e);
       }
     }
 
@@ -1789,10 +1613,12 @@
     // ==============================================================
     async function renderBadges() {
       if (!currentUser || currentUser.role === 'admin') return;
-      const allMatches = await db.selectAll(STORE_MATCHES) || [];
-      const count = allMatches.filter(m => m.user1Id === currentUser.id || m.user2Id === currentUser.id).length;
-      if (count > 0) { matchesBadge.textContent = count; matchesBadge.classList.remove('hidden'); }
-      else { matchesBadge.classList.add('hidden'); }
+      try {
+        const allMatches = await api('/matches/' + encodeURIComponent(currentUser.id)) || [];
+        const count = allMatches.length;
+        if (count > 0) { matchesBadge.textContent = count; matchesBadge.classList.remove('hidden'); }
+        else { matchesBadge.classList.add('hidden'); }
+      } catch(e) { /* ignore */ }
     }
 
     // ==============================================================
@@ -1800,29 +1626,29 @@
     // ==============================================================
     $('btn-likes').addEventListener('click', async () => {
       if (!currentUser) return;
-      const allInteractions = await db.selectAll(STORE_INTERACTIONS) || [];
-      const myLikes = allInteractions.filter(i => i.fromId === currentUser.id && i.type === 'like');
-
-      if (myLikes.length === 0) {
-        alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');
-        return;
-      }
-
-      const allMatches = await db.selectAll(STORE_MATCHES) || [];
-      let msg = '💜 Personas que te gustaron:\n\n';
-
-      for (const like of myLikes) {
-        const p = await db.select(STORE_PROFILES, { id: like.toId });
-        if (p) {
-          const isMatch = allMatches.some(m =>
-            (m.user1Id === currentUser.id && m.user2Id === p.id) ||
-            (m.user1Id === p.id && m.user2Id === currentUser.id)
-          );
-          msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
+      try {
+        const myLikes = await api('/likes/' + encodeURIComponent(currentUser.id)) || [];
+        if (myLikes.length === 0) {
+          alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');
+          return;
         }
-      }
-      msg += `\nTotal: ${myLikes.length} likes`;
-      alert(msg);
+
+        const allMatches = await api('/matches/' + encodeURIComponent(currentUser.id)) || [];
+        let msg = '💜 Personas que te gustaron:\n\n';
+
+        for (const like of myLikes) {
+          const p = await api('/profile/' + encodeURIComponent(like.toId));
+          if (p) {
+            const isMatch = allMatches.some(m =>
+              (m.user1Id === currentUser.id && m.user2Id === p.id) ||
+              (m.user1Id === p.id && m.user2Id === currentUser.id)
+            );
+            msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
+          }
+        }
+        msg += `\nTotal: ${myLikes.length} likes`;
+        alert(msg);
+      } catch(e) { alert('Error al cargar likes.'); }
     });
 
     // ==============================================================
@@ -1879,30 +1705,20 @@
       if (!name) { alert('El nombre no puede estar vacío.'); return; }
       if (!age || age < 18) { alert('Debes tener al menos 18 años.'); return; }
 
-      // Si hay nueva URL, usarla; si no, mantener la foto actual (puede ser base64 de archivo)
       const urlVal = editPhotoUrl.value.trim();
       if (urlVal) photo = urlVal;
 
-      // Verificar nombre único si cambió
-      if (name !== currentUser.name) {
-        const existing = await db.select(STORE_PROFILES, { index: 'by_name', value: name });
-        if (existing && existing.length > 0) {
-          alert('Ese nombre ya está en uso. Elige otro.');
-          return;
-        }
+      try {
+        const data = await api('/profile/' + encodeURIComponent(currentUser.id), {
+          method: 'PUT',
+          body: JSON.stringify({ name, age, gender, bio, photo })
+        });
+        currentUser = data.profile;
+        editOverlay.classList.add('hidden');
+        alert('💜 ¡Perfil actualizado correctamente!');
+      } catch (err) {
+        alert(err.message);
       }
-
-      // Actualizar en BD
-      currentUser.name = name;
-      currentUser.age = age;
-      currentUser.gender = gender;
-      currentUser.bio = bio || 'Nuevo en Rumbadoo 💜';
-      currentUser.photo = photo;
-
-      await db.update(STORE_PROFILES, currentUser);
-
-      editOverlay.classList.add('hidden');
-      alert('💜 ¡Perfil actualizado correctamente!');
     });
 
     // ==============================================================
@@ -1925,7 +1741,6 @@
     //   ADMIN PANEL
     // ==============================================================
     async function showAdminPanel() {
-      // Desde login de admin
       authScreen.classList.add('hidden');
       mainScreen.classList.add('hidden');
       adminScreen.classList.remove('hidden');
@@ -1933,63 +1748,59 @@
     }
 
     async function refreshAdminPanel() {
-      const allProfiles = await db.selectAll(STORE_PROFILES) || [];
-      const users = allProfiles.filter(p => p.role !== 'admin');
-      const allMatches = await db.selectAll(STORE_MATCHES) || [];
-      const allInteractions = await db.selectAll(STORE_INTERACTIONS) || [];
+      try {
+        const [stats, profiles] = await Promise.all([
+          api('/admin/stats'),
+          api('/profiles')
+        ]);
 
-      // Stats
-      $('admin-stats').innerHTML = `
-        <div class="admin-stat-card">
-          <div class="num">${users.length}</div>
-          <div class="label">Usuarios</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="num">${allMatches.length}</div>
-          <div class="label">Matches</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="num">${allInteractions.length}</div>
-          <div class="label">Interacciones</div>
-        </div>
-      `;
+        const users = (profiles || []).filter(p => p.role !== 'admin');
 
-      // Lista de perfiles
-      const list = $('admin-profile-list');
-      list.innerHTML = '';
-
-      if (users.length === 0) {
-        list.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No hay usuarios registrados.</p>';
-        return;
-      }
-
-      users.forEach(u => {
-        const div = document.createElement('div');
-        div.className = 'admin-profile-item';
-        div.innerHTML = `
-          <img src="${u.photo}" alt="${u.name}">
-          <div class="info">
-            <div class="name">${u.name}</div>
-            <div class="detail">${u.age} años · ${u.gender || '—'} · Creado: ${new Date(u.createdAt).toLocaleDateString()}</div>
+        $('admin-stats').innerHTML = `
+          <div class="admin-stat-card">
+            <div class="num">${stats.users}</div>
+            <div class="label">Usuarios</div>
           </div>
-          <button class="admin-del-btn" data-id="${u.id}">Eliminar</button>
+          <div class="admin-stat-card">
+            <div class="num">${stats.matches}</div>
+            <div class="label">Matches</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="num">${stats.interactions}</div>
+            <div class="label">Interacciones</div>
+          </div>
         `;
-        list.appendChild(div);
 
-        div.querySelector('.admin-del-btn').addEventListener('click', async () => {
-          if (!confirm(`¿Eliminar a ${u.name}? Esto también borrará sus interacciones y matches.`)) return;
-          await db.delete(STORE_PROFILES, u.id);
+        const list = $('admin-profile-list');
+        list.innerHTML = '';
 
-          // Limpiar interacciones y matches relacionados
-          const interactions = allInteractions.filter(i => i.fromId === u.id || i.toId === u.id);
-          for (const i of interactions) await db.delete(STORE_INTERACTIONS, i.id);
+        if (users.length === 0) {
+          list.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No hay usuarios registrados.</p>';
+          return;
+        }
 
-          const matches = allMatches.filter(m => m.user1Id === u.id || m.user2Id === u.id);
-          for (const m of matches) await db.delete(STORE_MATCHES, m.id);
+        users.forEach(u => {
+          const div = document.createElement('div');
+          div.className = 'admin-profile-item';
+          div.innerHTML = `
+            <img src="${u.photo}" alt="${u.name}">
+            <div class="info">
+              <div class="name">${u.name}</div>
+              <div class="detail">${u.age} años · ${u.gender || '—'} · Creado: ${new Date(u.createdAt).toLocaleDateString()}</div>
+            </div>
+            <button class="admin-del-btn" data-id="${u.id}">Eliminar</button>
+          `;
+          list.appendChild(div);
 
-          await refreshAdminPanel();
+          div.querySelector('.admin-del-btn').addEventListener('click', async () => {
+            if (!confirm(`¿Eliminar a ${u.name}? Esto también borrará sus interacciones y matches.`)) return;
+            await api('/admin/profile/' + encodeURIComponent(u.id), { method: 'DELETE' });
+            await refreshAdminPanel();
+          });
         });
-      });
+      } catch(e) {
+        console.error('Error en admin panel:', e);
+      }
     }
 
     adminClose.addEventListener('click', () => {
