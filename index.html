@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rumbadoo - Encuentra tu ritmo</title>
   <style>
-    /* ============================================================
-       RUMBADOO — Estilos globales
-       ============================================================ */
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
     :root {
@@ -58,7 +55,6 @@
       overflow:hidden;
     }
 
-    /* ── Patrón decorativo de fondo ── */
     body::before {
       content:'';
       position:fixed;
@@ -71,12 +67,10 @@
       z-index:0;
     }
 
-    /* ── Scrollbar ── */
     ::-webkit-scrollbar { width:6px; }
     ::-webkit-scrollbar-track { background:transparent; }
     ::-webkit-scrollbar-thumb { background:var(--purple-400); border-radius:3px; }
 
-    /* ── App shell ── */
     #app {
       position:relative;
       z-index:1;
@@ -92,9 +86,9 @@
     }
 
     /* ============================================================
-       PANTALLA DE REGISTRO
+       PANTALLA DE AUTENTICACIÓN
        ============================================================ */
-    #register-screen {
+    #auth-screen {
       flex:1;
       display:flex;
       flex-direction:column;
@@ -104,9 +98,9 @@
       background: linear-gradient(160deg, var(--purple-100) 0%, var(--white) 50%, var(--purple-200) 100%);
       overflow-y:auto;
     }
-    #register-screen.hidden { display:none; }
+    #auth-screen.hidden { display:none; }
 
-    .register-logo {
+    .auth-logo {
       font-size:48px;
       font-weight:900;
       background: linear-gradient(135deg, var(--purple-700), var(--pink-accent));
@@ -116,29 +110,61 @@
       margin-bottom:4px;
       letter-spacing:-1px;
     }
-    .register-sub {
+    .auth-sub {
       color:var(--gray-500);
       font-size:14px;
-      margin-bottom:28px;
+      margin-bottom:8px;
       font-weight:600;
     }
 
-    #register-form {
+    .auth-toggle {
+      display:flex;
+      gap:4px;
+      background:var(--purple-100);
+      border-radius:var(--radius-full);
+      padding:4px;
+      margin-bottom:24px;
+      width:100%;
+      max-width:360px;
+    }
+    .auth-toggle button {
+      flex:1;
+      padding:10px 16px;
+      border:none;
+      border-radius:var(--radius-full);
+      font-family:var(--font);
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      transition:var(--transition);
+      background:transparent;
+      color:var(--gray-500);
+    }
+    .auth-toggle button.active {
+      background:var(--white);
+      color:var(--purple-700);
+      box-shadow:var(--shadow);
+    }
+    .auth-toggle button:hover { color:var(--purple-600); }
+
+    .auth-form {
       width:100%;
       max-width:360px;
       display:flex;
       flex-direction:column;
       gap:14px;
     }
-    #register-form label {
+    .auth-form.hidden { display:none; }
+
+    .auth-form label {
       font-size:13px;
       font-weight:700;
       color:var(--purple-800);
       margin-bottom:-8px;
     }
-    #register-form input,
-    #register-form select,
-    #register-form textarea {
+    .auth-form input,
+    .auth-form select,
+    .auth-form textarea {
       width:100%;
       padding:12px 16px;
       border:2px solid var(--purple-200);
@@ -149,13 +175,13 @@
       transition:var(--transition);
       outline:none;
     }
-    #register-form input:focus,
-    #register-form select:focus,
-    #register-form textarea:focus {
+    .auth-form input:focus,
+    .auth-form select:focus,
+    .auth-form textarea:focus {
       border-color:var(--purple-500);
       box-shadow:0 0 0 4px rgba(139,92,246,.15);
     }
-    #register-form textarea {
+    .auth-form textarea {
       resize:vertical;
       min-height:64px;
     }
@@ -178,9 +204,12 @@
       transform:translateY(-2px);
       box-shadow:0 6px 24px rgba(139,92,246,.45);
     }
-    .btn-primary:active {
-      transform:translateY(0);
+    .btn-primary:active { transform:translateY(0); }
+    .btn-danger {
+      background: linear-gradient(135deg, var(--rose), #e11d48);
+      box-shadow:0 4px 16px rgba(244,63,94,.35);
     }
+    .btn-danger:hover { box-shadow:0 6px 24px rgba(244,63,94,.45); }
 
     .avatar-preview-wrap {
       display:flex;
@@ -196,8 +225,16 @@
       background:var(--purple-100);
     }
 
+    .auth-error {
+      color:var(--rose);
+      font-size:13px;
+      font-weight:600;
+      text-align:center;
+      min-height:20px;
+    }
+
     /* ============================================================
-       PANTALLA PRINCIPAL (con tabs)
+       PANTALLA PRINCIPAL
        ============================================================ */
     #main-screen {
       flex:1;
@@ -207,7 +244,6 @@
     }
     #main-screen.hidden { display:none; }
 
-    /* ── Header ── */
     .main-header {
       display:flex;
       align-items:center;
@@ -260,7 +296,6 @@
       transform:translate(4px,-4px);
     }
 
-    /* ── Tab bar ── */
     .tab-bar {
       display:flex;
       background:rgba(255,255,255,.85);
@@ -303,7 +338,6 @@
     }
     .tab-btn:hover { color:var(--purple-600); }
 
-    /* ── Contenido de tabs ── */
     .tab-content {
       flex:1;
       overflow:hidden;
@@ -319,7 +353,7 @@
     .tab-pane.active { display:block; }
 
     /* ============================================================
-       TAB: DESCUBRIR (tarjetas)
+       TAB: DESCUBRIR
        ============================================================ */
     #discover-pane {
       display:none;
@@ -328,9 +362,7 @@
       justify-content:center;
       padding:0;
     }
-    #discover-pane.active {
-      display:flex;
-    }
+    #discover-pane.active { display:flex; }
 
     .card-stack {
       position:relative;
@@ -357,16 +389,6 @@
       transition:none;
       cursor:grabbing;
     }
-    .profile-card.dismissed-left {
-      transform:translateX(-140%) rotate(-24deg);
-      opacity:0;
-      transition:transform 0.5s ease, opacity 0.5s ease;
-    }
-    .profile-card.dismissed-right {
-      transform:translateX(140%) rotate(24deg);
-      opacity:0;
-      transition:transform 0.5s ease, opacity 0.5s ease;
-    }
 
     .profile-card .card-bg {
       width:100%;
@@ -374,13 +396,11 @@
       object-fit:cover;
       display:block;
     }
-
     .profile-card .card-overlay {
       position:absolute;
       inset:0;
       background: linear-gradient(transparent 50%, rgba(0,0,0,.7));
     }
-
     .profile-card .card-info {
       position:absolute;
       bottom:0;
@@ -417,7 +437,6 @@
       margin-top:6px;
     }
 
-    /* ── Indicadores de like/pass ── */
     .swipe-indicator {
       position:absolute;
       top:32px;
@@ -445,7 +464,6 @@
     }
     .swipe-indicator.show { opacity:1; }
 
-    /* ── Botones de acción ── */
     .card-actions {
       display:flex;
       align-items:center;
@@ -496,7 +514,6 @@
       box-shadow:0 4px 20px rgba(251,191,36,.25);
     }
 
-    /* ── Sin más perfiles ── */
     .no-more {
       display:flex;
       flex-direction:column;
@@ -532,7 +549,6 @@
       font-size: 14px;
       font-weight: 800;
     }
-
     .matches-grid {
       display:grid;
       grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
@@ -572,7 +588,6 @@
       color:var(--gray-500);
       font-weight:600;
     }
-
     .empty-state {
       text-align:center;
       padding:60px 24px;
@@ -582,65 +597,7 @@
     .empty-state h3 { font-weight:700; font-size:18px; color:var(--gray-500); }
 
     /* ============================================================
-       TAB: LIKES
-       ============================================================ */
-    .likes-list {
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .like-item {
-      display:flex;
-      align-items:center;
-      gap:14px;
-      padding:12px;
-      background:var(--white);
-      border-radius:var(--radius-sm);
-      box-shadow:var(--shadow-sm);
-      transition:var(--transition);
-      animation:fadeUp 0.3s ease backwards;
-    }
-    .like-item:hover {
-      box-shadow:var(--shadow);
-    }
-    .like-item img {
-      width:48px; height:48px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid var(--purple-200);
-      flex-shrink:0;
-    }
-    .like-item .like-info {
-      flex:1;
-      min-width:0;
-    }
-    .like-item .like-info .name {
-      font-weight:700;
-      font-size:15px;
-      color:var(--gray-800);
-    }
-    .like-item .like-info .age {
-      font-size:13px;
-      color:var(--gray-500);
-      font-weight:600;
-    }
-    .like-item .like-status {
-      font-size:12px;
-      font-weight:700;
-      padding:4px 12px;
-      border-radius:var(--radius-full);
-    }
-    .like-item .like-status.mutual {
-      background:#fce7f3;
-      color:var(--pink-accent);
-    }
-    .like-item .like-status.pending {
-      background:var(--purple-100);
-      color:var(--purple-700);
-    }
-
-    /* ============================================================
-       MODAL DE MATCH
+       MODAL MATCH
        ============================================================ */
     .match-modal-overlay {
       position:fixed;
@@ -716,6 +673,107 @@
     }
 
     /* ============================================================
+       ADMIN PANEL
+       ============================================================ */
+    #admin-screen {
+      position:fixed;
+      inset:0;
+      z-index:500;
+      background:var(--white);
+      display:flex;
+      flex-direction:column;
+      animation:fadeIn 0.3s ease;
+    }
+    #admin-screen.hidden { display:none; }
+
+    .admin-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:16px 20px;
+      background:var(--purple-900);
+      color:var(--white);
+    }
+    .admin-header h2 { font-size:18px; font-weight:800; }
+    .admin-close {
+      background:none;
+      border:none;
+      color:var(--white);
+      font-size:24px;
+      cursor:pointer;
+      padding:4px 8px;
+    }
+
+    .admin-body {
+      flex:1;
+      overflow-y:auto;
+      padding:16px 20px;
+    }
+    .admin-stats {
+      display:flex;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .admin-stat-card {
+      flex:1;
+      padding:14px;
+      border-radius:var(--radius-sm);
+      text-align:center;
+      background:var(--purple-100);
+    }
+    .admin-stat-card .num {
+      font-size:28px;
+      font-weight:900;
+      color:var(--purple-700);
+    }
+    .admin-stat-card .label {
+      font-size:12px;
+      font-weight:700;
+      color:var(--gray-500);
+    }
+
+    .admin-profile-item {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px;
+      background:var(--gray-50);
+      border-radius:var(--radius-sm);
+      margin-bottom:8px;
+      border:1px solid var(--gray-200);
+    }
+    .admin-profile-item img {
+      width:44px; height:44px;
+      border-radius:50%;
+      object-fit:cover;
+    }
+    .admin-profile-item .info {
+      flex:1;
+      min-width:0;
+    }
+    .admin-profile-item .info .name {
+      font-weight:700;
+      font-size:14px;
+    }
+    .admin-profile-item .info .detail {
+      font-size:12px;
+      color:var(--gray-500);
+    }
+    .admin-profile-item .admin-del-btn {
+      padding:6px 14px;
+      border:none;
+      border-radius:var(--radius-sm);
+      font-family:var(--font);
+      font-size:12px;
+      font-weight:700;
+      color:var(--white);
+      background:var(--rose);
+      cursor:pointer;
+      transition:var(--transition);
+    }
+    .admin-profile-item .admin-del-btn:hover { background:#e11d48; }
+
+    /* ============================================================
        ANIMACIONES
        ============================================================ */
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
@@ -753,7 +811,6 @@
       font-size:24px;
       animation:floatHearts 2.5s ease-out forwards;
     }
-
     .confetti-piece {
       position:fixed;
       z-index:9998;
@@ -761,14 +818,6 @@
       width:10px;
       height:10px;
       animation:confettiFall 2.5s ease-in forwards;
-    }
-
-    .new-match-flash {
-      animation:matchFlash 0.6s ease;
-    }
-    @keyframes matchFlash {
-      0%,100%{box-shadow:0 0 0 0 rgba(236,72,153,0)}
-      50%{box-shadow:0 0 0 12px rgba(236,72,153,.3)}
     }
 
     /* ============================================================
@@ -783,32 +832,50 @@
       .matches-grid { grid-template-columns:repeat(2,1fr); }
       .match-modal { padding:32px 20px 24px; }
       .match-modal .match-profiles img { width:64px; height:64px; }
+      .admin-stats { flex-direction:column; }
     }
-
     @media(max-width:360px){
       .card-stack { height:360px; }
       .action-btn { width:46px; height:46px; font-size:18px; gap:16px; }
       .card-actions { gap:14px; }
     }
 
-    /* ── Clase auxiliar ── */
     .hidden { display:none !important; }
   </style>
 </head>
 <body>
-
-  <!-- ==========================================================
-       APP
-       ========================================================== -->
   <div id="app">
 
-    <!-- ==================== REGISTRO ==================== -->
-    <div id="register-screen">
-      <div class="register-logo">💜 Rumbadoo</div>
-      <div class="register-sub">Encuentra tu ritmo</div>
-      <form id="register-form">
-        <label for="reg-name">Tu nombre</label>
+    <!-- ==================== AUTENTICACIÓN ==================== -->
+    <div id="auth-screen">
+      <div class="auth-logo">💜 Rumbadoo</div>
+      <div class="auth-sub">Encuentra tu ritmo</div>
+
+      <div class="auth-toggle">
+        <button id="tab-login" class="active">Iniciar sesión</button>
+        <button id="tab-register">Registrarse</button>
+      </div>
+
+      <div class="auth-error" id="auth-error"></div>
+
+      <!-- LOGIN -->
+      <form class="auth-form" id="login-form">
+        <label for="login-name">Nombre de usuario</label>
+        <input type="text" id="login-name" placeholder="Tu nombre" required>
+
+        <label for="login-pass">Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••" required>
+
+        <button type="submit" class="btn-primary">💜 Entrar</button>
+      </form>
+
+      <!-- REGISTRO -->
+      <form class="auth-form hidden" id="register-form">
+        <label for="reg-name">Nombre</label>
         <input type="text" id="reg-name" placeholder="Ej: Carlos" required>
+
+        <label for="reg-pass">Contraseña</label>
+        <input type="password" id="reg-pass" placeholder="Mínimo 4 caracteres" minlength="4" required>
 
         <label for="reg-age">Edad</label>
         <input type="number" id="reg-age" placeholder="18" min="18" max="120" required>
@@ -830,25 +897,22 @@
           <input type="url" id="reg-photo" placeholder="https://... o déjalo vacío">
         </div>
 
-        <button type="submit" class="btn-primary">💜 ¡Empezar!</button>
+        <button type="submit" class="btn-primary">💜 ¡Registrarse!</button>
       </form>
     </div>
 
     <!-- ==================== PANTALLA PRINCIPAL ==================== -->
     <div id="main-screen" class="hidden">
 
-      <!-- Header -->
       <div class="main-header">
         <span class="logo">💜 Rumbadoo</span>
         <div class="header-actions">
-          <button class="header-btn" id="btn-likes" title="Mis likes">
-            👍<span class="badge hidden" id="likes-badge">0</span>
-          </button>
+          <button class="header-btn" id="btn-likes" title="Mis likes">👍</button>
           <button class="header-btn" id="btn-profile" title="Mi perfil">👤</button>
+          <button class="header-btn" id="btn-logout" title="Cerrar sesión">🚪</button>
         </div>
       </div>
 
-      <!-- Tab bar -->
       <div class="tab-bar">
         <button class="tab-btn active" data-tab="discover">
           <span class="tab-icon">🔍</span> Descubrir
@@ -859,31 +923,21 @@
         </button>
       </div>
 
-      <!-- Contenido -->
       <div class="tab-content">
-
-        <!-- DESCUBRIR -->
         <div class="tab-pane active" id="discover-pane">
-
-          <div class="card-stack" id="card-stack">
-            <!-- Las tarjetas se generan dinámicamente -->
-          </div>
-
+          <div class="card-stack" id="card-stack"></div>
           <div class="card-actions" id="card-actions">
             <button class="action-btn pass" id="btn-pass">👎</button>
             <button class="action-btn like" id="btn-like">❤️</button>
             <button class="action-btn super" id="btn-super">⭐</button>
           </div>
-
           <div class="no-more hidden" id="no-more">
             <div class="emoji-big">🌈</div>
             <h3>¡No hay más perfiles!</h3>
             <p>Vuelve pronto para ver nuevos rumbos.</p>
           </div>
-
         </div>
 
-        <!-- MATCHES -->
         <div class="tab-pane" id="matches-pane">
           <div class="section-header">
             <h2>💕 Tus matches</h2>
@@ -896,12 +950,23 @@
             <p>¡Sigue explorando perfiles!</p>
           </div>
         </div>
+      </div>
+    </div>
 
-      </div><!-- /tab-content -->
-    </div><!-- /main-screen -->
+  </div>
 
-  </div><!-- /app -->
-
+  <!-- ==================== ADMIN PANEL ==================== -->
+  <div id="admin-screen" class="hidden">
+    <div class="admin-header">
+      <h2>🛡️ Panel Admin — Rumbadoo</h2>
+      <button class="admin-close" id="admin-close">✕</button>
+    </div>
+    <div class="admin-body" id="admin-body">
+      <div class="admin-stats" id="admin-stats"></div>
+      <h3 style="font-size:16px;font-weight:800;color:var(--purple-800);margin-bottom:12px;">Perfiles registrados</h3>
+      <div id="admin-profile-list"></div>
+    </div>
+  </div>
 
   <!-- ==================== MODAL MATCH ==================== -->
   <div class="match-modal-overlay hidden" id="match-modal">
@@ -918,288 +983,379 @@
     </div>
   </div>
 
-
-  <!-- ==========================================================
-       JAVASCRIPT
-       ========================================================== -->
   <script>
     /* ==============================================================
-       RUMBADOO — Aplicación completa del lado del cliente
+       RUMBADOO — MiniSQL + App
        ============================================================== */
 
-    // ─── Perfiles de ejemplo precargados ──────────────────────────
-    const SAMPLE_PROFILES = [
-      {
-        id: 's1',
-        name: 'Valentina',
-        age: 26,
-        gender: 'Mujer',
-        bio: '✨ Bailarina en días libres, programadora de profesión. Busco a alguien que baile conmigo bajo la lluvia.',
-        photo: 'https://ui-avatars.com/api/?name=Valentina&background=8b5cf6&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's2',
-        name: 'Mateo',
-        age: 28,
-        gender: 'Hombre',
-        bio: '🎸 Guitarrista y chef frustrado. Puedo tocarte una canción mientras cocino pasta.',
-        photo: 'https://ui-avatars.com/api/?name=Mateo&background=7c3aed&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's3',
-        name: 'Camila',
-        age: 24,
-        gender: 'Mujer',
-        bio: '📚 Adicta a los libros y al café. Si me invitas a una librería, me tienes ganada.',
-        photo: 'https://ui-avatars.com/api/?name=Camila&background=a78bfa&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's4',
-        name: 'Santiago',
-        age: 30,
-        gender: 'Hombre',
-        bio: '🏋️‍♂️ Fitness lover. Mi religión es el gym y mi pecado favorito es el chocolate.',
-        photo: 'https://ui-avatars.com/api/?name=Santiago&background=6b3fa0&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's5',
-        name: 'Isabella',
-        age: 22,
-        gender: 'Mujer',
-        bio: '🎨 Artista y soñadora. Vivo entre acuarelas y atardeceres.',
-        photo: 'https://ui-avatars.com/api/?name=Isabella&background=c4b5fd&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's6',
-        name: 'Daniel',
-        age: 27,
-        gender: 'Hombre',
-        bio: '🐶 Mi perro es más interesante que yo. Pero igual dame una oportunidad.',
-        photo: 'https://ui-avatars.com/api/?name=Daniel&background=4a2c8a&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's7',
-        name: 'Sofía',
-        age: 29,
-        gender: 'Mujer',
-        bio: '🌮 Amo los tacos y viajar. Si sabes dónde venden los mejores tacos, ya tenemos cita.',
-        photo: 'https://ui-avatars.com/api/?name=Sofia&background=ddd6fe&color=333&size=256&bold=true'
-      },
-      {
-        id: 's8',
-        name: 'Andrés',
-        age: 25,
-        gender: 'Hombre',
-        bio: '🎮 Gamer y coleccionista de memes. Busco a alguien que aguante mis jokes malos.',
-        photo: 'https://ui-avatars.com/api/?name=Andres&background=8b5cf6&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's9',
-        name: 'María José',
-        age: 23,
-        gender: 'Mujer',
-        bio: '🌸 Amante del yoga, la naturaleza y los cafés con pierna. Busco paz y buena vibra.',
-        photo: 'https://ui-avatars.com/api/?name=Maria+Jose&background=e6d5f5&color=333&size=256&bold=true'
-      },
-      {
-        id: 's10',
-        name: 'Fernando',
-        age: 31,
-        gender: 'Hombre',
-        bio: '🎬 Cinefilo empedernido. Puedo recomendarte películas todo el fin de semana.',
-        photo: 'https://ui-avatars.com/api/?name=Fernando&background=2d1b69&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's11',
-        name: 'Lucía',
-        age: 21,
-        gender: 'Mujer',
-        bio: '🎤 Cantante en la ducha, fan del karaoke y de los atardeceres en la playa.',
-        photo: 'https://ui-avatars.com/api/?name=Lucia&background=a78bfa&color=fff&size=256&bold=true'
-      },
-      {
-        id: 's12',
-        name: 'Javier',
-        age: 26,
-        gender: 'Hombre',
-        bio: '☕ Barista de corazón. Puedo prepararte el mejor latte art de tu vida.',
-        photo: 'https://ui-avatars.com/api/?name=Javier&background=7c3aed&color=fff&size=256&bold=true'
+    // ==============================================================
+    //   MINISQL — Capa de base de datos sobre IndexedDB
+    //   Permite: insertar, seleccionar, actualizar, eliminar
+    // ==============================================================
+    class MiniSQL {
+      constructor(dbName, version) {
+        this.dbName = dbName;
+        this.version = version;
+        this.db = null;
       }
+
+      open(stores) {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, this.version);
+
+          req.onupgradeneeded = (ev) => {
+            const db = ev.target.result;
+            stores.forEach(s => {
+              if (!db.objectStoreNames.contains(s.name)) {
+                const store = db.createObjectStore(s.name, { keyPath: s.key || 'id', autoIncrement: !!s.auto });
+                if (s.indexes) {
+                  s.indexes.forEach(idx => store.createIndex(idx.name, idx.key, idx.opts || {}));
+                }
+              }
+            });
+          };
+
+          req.onsuccess = (ev) => {
+            this.db = ev.target.result;
+            resolve();
+          };
+
+          req.onerror = (ev) => reject(ev.target.error);
+        });
+      }
+
+      insert(storeName, data) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          const req = store.put(data);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      select(storeName, query) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readonly');
+          const store = tx.objectStore(storeName);
+          let req;
+          if (!query) {
+            req = store.getAll();
+          } else if (query.id) {
+            req = store.get(query.id);
+          } else if (query.index && query.value) {
+            const idx = store.index(query.index);
+            req = idx.getAll(query.value);
+          } else {
+            req = store.getAll();
+          }
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      selectAll(storeName) {
+        return this.select(storeName);
+      }
+
+      update(storeName, data) {
+        return this.insert(storeName, data);
+      }
+
+      delete(storeName, id) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          const req = store.delete(id);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      count(storeName) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readonly');
+          const store = tx.objectStore(storeName);
+          const req = store.count();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+    }
+
+    // ==============================================================
+    //   INSTANCIA DE LA BD
+    // ==============================================================
+    const db = new MiniSQL('RumbadooDB', 1);
+
+    const STORE_PROFILES = 'profiles';
+    const STORE_INTERACTIONS = 'interactions';
+    const STORE_MATCHES = 'matches';
+
+    const STORES = [
+      { name: STORE_PROFILES, key: 'id', indexes: [{ name: 'by_name', key: 'name' }] },
+      { name: STORE_INTERACTIONS, key: 'id', indexes: [
+        { name: 'by_from', key: 'fromId' },
+        { name: 'by_to', key: 'toId' }
+      ]},
+      { name: STORE_MATCHES, key: 'id', indexes: [
+        { name: 'by_user1', key: 'user1Id' },
+        { name: 'by_user2', key: 'user2Id' }
+      ]}
     ];
 
-    // ─── Estado de la aplicación ─────────────────────────────────
-    let state = {
-      currentUser: null,        // { id, name, age, gender, bio, photo }
-      profiles: [],            // copia de SAMPLE_PROFILES (filtrados)
-      likes: [],               // ids de perfiles a los que di like
-      passed: [],              // ids de perfiles que pasé
-      matches: [],             // { userId, profileId, profileName, profilePhoto, matchedAt }
-      viewedProfiles: [],      // control para no repetir
-      currentCardIndex: 0,
-      isSwiping: false,
-      hasNewMatch: false
-    };
-
-    // ─── Referencias DOM ─────────────────────────────────────────
+    // ==============================================================
+    //   UTILERÍAS
+    // ==============================================================
     const $ = id => document.getElementById(id);
-    const registerScreen  = $('register-screen');
-    const registerForm    = $('register-form');
-    const mainScreen      = $('main-screen');
-    const cardStack       = $('card-stack');
-    const noMore          = $('no-more');
-    const cardActions     = $('card-actions');
-    const btnLike         = $('btn-like');
-    const btnPass         = $('btn-pass');
-    const btnSuper        = $('btn-super');
-    const matchesGrid     = $('matches-grid');
-    const matchesEmpty    = $('matches-empty');
-    const matchCount      = $('match-count');
-    const matchModal      = $('match-modal');
-    const matchMyAvatar   = $('match-my-avatar');
-    const matchTheirAvatar = $('match-their-avatar');
-    const matchContinue   = $('match-continue');
-    const matchesBadge    = $('matches-badge');
-    const likesBadge      = $('likes-badge');
-
-    // ─── Utilerías ───────────────────────────────────────────────
-    function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+    function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
     function avatarUrl(name) {
       const c = ['8b5cf6','7c3aed','6b3fa0','4a2c8a','a78bfa','c4b5fd','ddd6fe','e6d5f5','2d1b69'];
-      const i = name.length % c.length;
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${c[i]}&color=fff&size=256&bold=true`;
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${c[name.length % c.length]}&color=fff&size=256&bold=true`;
     }
 
-    // ─── Persistencia (localStorage) ─────────────────────────────
-    function saveState() {
-      try {
-        const data = {
-          currentUser: state.currentUser,
-          likes: state.likes,
-          passed: state.passed,
-          matches: state.matches,
-          viewedProfiles: state.viewedProfiles
-        };
-        localStorage.setItem('rumbadoo_state', JSON.stringify(data));
-      } catch(e) { /* localStorage lleno o no disponible */ }
+    function hashPass(pw) {
+      let h = 0;
+      for (let i = 0; i < pw.length; i++) { h = ((h << 5) - h) + pw.charCodeAt(i); h |= 0; }
+      return 'h' + Math.abs(h).toString(36);
     }
 
-    function loadState() {
-      try {
-        const raw = localStorage.getItem('rumbadoo_state');
-        if (!raw) return false;
-        const data = JSON.parse(raw);
-        state.currentUser    = data.currentUser || null;
-        state.likes          = data.likes || [];
-        state.passed         = data.passed || [];
-        state.matches         = data.matches || [];
-        state.viewedProfiles  = data.viewedProfiles || [];
-        return true;
-      } catch(e) { return false; }
-    }
+    // ==============================================================
+    //   ESTADO GLOBAL
+    // ==============================================================
+    let currentUser = null;       // perfil logueado
+    let isSwiping = false;
 
-    // ─── Inicialización ──────────────────────────────────────────
-    function init() {
-      // Cargar perfiles de ejemplo
-      state.profiles = SAMPLE_PROFILES.map(p => ({ ...p }));
+    // ==============================================================
+    //   REFERENCIAS DOM
+    // ==============================================================
+    const authScreen       = $('auth-screen');
+    const mainScreen       = $('main-screen');
+    const loginForm        = $('login-form');
+    const registerForm     = $('register-form');
+    const tabLogin         = $('tab-login');
+    const tabRegister      = $('tab-register');
+    const authError        = $('auth-error');
+    const cardStack        = $('card-stack');
+    const noMore           = $('no-more');
+    const cardActions      = $('card-actions');
+    const btnLike          = $('btn-like');
+    const btnPass          = $('btn-pass');
+    const btnSuper         = $('btn-super');
+    const matchesGrid      = $('matches-grid');
+    const matchesEmpty     = $('matches-empty');
+    const matchCount       = $('match-count');
+    const matchModal       = $('match-modal');
+    const matchMyAvatar    = $('match-my-avatar');
+    const matchTheirAvatar = $('match-their-avatar');
+    const matchContinue    = $('match-continue');
+    const matchesBadge     = $('matches-badge');
+    const adminScreen      = $('admin-screen');
+    const adminBody        = $('admin-body');
+    const adminClose       = $('admin-close');
 
-      // Intentar restaurar sesión
-      if (loadState() && state.currentUser) {
-        showMainScreen();
-      } else {
-        showRegisterScreen();
+    // ==============================================================
+    //   INICIALIZACIÓN
+    // ==============================================================
+    async function init() {
+      await db.open(STORES);
+
+      // Crear admin por defecto si no existe
+      const admins = await db.select(STORE_PROFILES, { index: 'by_name', value: '__admin__' });
+      if (!admins || admins.length === 0) {
+        await db.insert(STORE_PROFILES, {
+          id: 'admin_' + genId(),
+          name: '__admin__',
+          password: hashPass('admin123'),
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        });
       }
+
+      // Intentar sesión guardada
+      const saved = localStorage.getItem('rumbadoo_session');
+      if (saved) {
+        try {
+          const sid = JSON.parse(saved);
+          const profile = await db.select(STORE_PROFILES, { id: sid });
+          if (profile) {
+            currentUser = profile;
+            showMainScreen();
+            return;
+          }
+        } catch(e) { /* ignore */ }
+      }
+
+      showAuthScreen();
     }
 
-    // ─── Pantallas ───────────────────────────────────────────────
-    function showRegisterScreen() {
-      registerScreen.classList.remove('hidden');
+    // ==============================================================
+    //   CAMBIO DE PANTALLAS
+    // ==============================================================
+    function showAuthScreen() {
+      authScreen.classList.remove('hidden');
       mainScreen.classList.add('hidden');
+      adminScreen.classList.add('hidden');
+      authError.textContent = '';
     }
 
     function showMainScreen() {
-      registerScreen.classList.add('hidden');
+      authScreen.classList.add('hidden');
       mainScreen.classList.remove('hidden');
+      adminScreen.classList.add('hidden');
 
-      // Filtrar el usuario actual de los perfiles disponibles
-      state.profiles = SAMPLE_PROFILES.filter(p => p.id !== state.currentUser?.id);
+      localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
 
-      // Reconstruir las colecciones de likes/passed limpiando referencias rotas
-      const validIds = new Set(state.profiles.map(p => p.id));
-      state.likes   = state.likes.filter(id => validIds.has(id));
-      state.passed  = state.passed.filter(id => validIds.has(id));
+      // Si es admin, mostrar botón especial
+      if (currentUser.role === 'admin') {
+        // Admin no usa la app normal, redirigir al panel
+        showAdminPanel();
+        return;
+      }
 
-      // Verificar matches nuevos (like mutuo)
-      checkForNewMatches();
-
-      renderAll();
-      saveState();
-
-      // Si estábamos en la pestaña matches, refrescar
-      const activeTab = document.querySelector('.tab-btn.active');
-      if (activeTab) switchTab(activeTab.dataset.tab);
+      loadDiscover();
+      loadMatches();
+      renderBadges();
     }
 
-    // ─── Detección de matches ──────────────────────────────────
-    function checkForNewMatches() {
-      // Recorremos los likes del usuario
-      for (const likedId of state.likes) {
-        // ¿Ese perfil también nos dio like? (simulado: 35% de probabilidad)
-        if (state.matches.some(m => m.profileId === likedId)) continue;
+    // ==============================================================
+    //   AUTENTICACIÓN
+    // ==============================================================
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      authError.textContent = '';
+    });
 
-        // Simulamos reciprocidad: 35% de quienes reciben like también dan like
-        const isMutual = Math.random() < 0.35;
+    tabRegister.addEventListener('click', () => {
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      registerForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+      authError.textContent = '';
+    });
 
-        if (isMutual) {
-          const profile = state.profiles.find(p => p.id === likedId);
-          if (!profile) continue;
+    // Login
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = $('login-name').value.trim();
+      const pass = $('login-pass').value;
 
-          state.matches.push({
-            id: genId(),
-            profileId: likedId,
-            profileName: profile.name,
-            profilePhoto: profile.photo,
-            matchedAt: new Date().toISOString()
-          });
+      if (!name || !pass) { authError.textContent = 'Completa todos los campos.'; return; }
 
-          state.hasNewMatch = true;
+      // Admin login
+      const admins = await db.select(STORE_PROFILES, { index: 'by_name', value: '__admin__' });
+      if (name.toLowerCase() === 'admin' && admins && admins.length > 0) {
+        const admin = admins[0];
+        if (admin.password === hashPass(pass)) {
+          currentUser = admin;
+          localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
+          showMainScreen();
+          return;
         }
       }
 
-      // Ordenar matches por fecha (más reciente primero)
-      state.matches.sort((a,b) => new Date(b.matchedAt) - new Date(a.matchedAt));
-    }
+      const profiles = await db.select(STORE_PROFILES, { index: 'by_name', value: name });
+      if (!profiles || profiles.length === 0) {
+        authError.textContent = 'Ese usuario no existe.';
+        return;
+      }
 
-    // ─── Renderizado ─────────────────────────────────────────────
-    function renderAll() {
-      renderCard();
-      renderMatches();
-      renderBadges();
-      renderLikesList();
-    }
+      const profile = profiles[0];
+      if (profile.password !== hashPass(pass)) {
+        authError.textContent = 'Contraseña incorrecta.';
+        return;
+      }
 
-    // ─── Tarjetas ────────────────────────────────────────────────
-    function getNextProfile() {
-      const available = state.profiles.filter(p =>
-        !state.likes.includes(p.id) &&
-        !state.passed.includes(p.id) &&
-        p.id !== state.currentUser?.id
+      currentUser = profile;
+      localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
+      showMainScreen();
+    });
+
+    // Registro
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name   = $('reg-name').value.trim();
+      const pass   = $('reg-pass').value;
+      const age    = parseInt($('reg-age').value, 10);
+      const gender = $('reg-gender').value;
+      const bio    = $('reg-bio').value.trim();
+      let photo    = $('reg-photo').value.trim();
+
+      if (!name) { authError.textContent = 'Ingresa tu nombre.'; return; }
+      if (pass.length < 4) { authError.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
+      if (!age || age < 18) { authError.textContent = 'Debes tener al menos 18 años.'; return; }
+
+      // Verificar nombre único
+      const existing = await db.select(STORE_PROFILES, { index: 'by_name', value: name });
+      if (existing && existing.length > 0) {
+        authError.textContent = 'Ese nombre ya está en uso. Elige otro.';
+        return;
+      }
+
+      if (!photo) photo = avatarUrl(name);
+
+      const profile = {
+        id: genId(),
+        name,
+        password: hashPass(pass),
+        age,
+        gender,
+        bio: bio || 'Nuevo en Rumbadoo 💜',
+        photo,
+        role: 'user',
+        createdAt: new Date().toISOString()
+      };
+
+      await db.insert(STORE_PROFILES, profile);
+      currentUser = profile;
+      localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
+      showMainScreen();
+    });
+
+    // Preview avatar
+    $('reg-photo').addEventListener('input', function() {
+      const val = this.value.trim();
+      if (val) { $('avatar-preview').src = val; }
+      else { $('avatar-preview').src = avatarUrl($('reg-name').value.trim() || 'T'); }
+    });
+    $('reg-name').addEventListener('input', function() {
+      if (!$('reg-photo').value.trim()) {
+        $('avatar-preview').src = avatarUrl(this.value.trim() || 'T');
+      }
+    });
+
+    // Logout
+    $('btn-logout').addEventListener('click', () => {
+      currentUser = null;
+      localStorage.removeItem('rumbadoo_session');
+      showAuthScreen();
+    });
+
+    // ==============================================================
+    //   DESCUBRIR — Cargar perfiles
+    // ==============================================================
+    async function loadDiscover() {
+      if (!currentUser || currentUser.role === 'admin') return;
+
+      const allProfiles = await db.selectAll(STORE_PROFILES);
+      const interactions = await db.selectAll(STORE_INTERACTIONS);
+
+      const myInteractions = (interactions || []).filter(i => i.fromId === currentUser.id);
+      const interactedIds = new Set(myInteractions.map(i => i.toId));
+
+      // Perfiles disponibles: todos menos yo y los ya interactuados
+      let available = (allProfiles || []).filter(p =>
+        p.id !== currentUser.id &&
+        p.role !== 'admin' &&
+        !interactedIds.has(p.id)
       );
-      if (available.length === 0) return null;
 
-      // Ordenar: los no vistos primero, luego por edad cercana
-      const unseen = available.filter(p => !state.viewedProfiles.includes(p.id));
-      const seen   = available.filter(p => state.viewedProfiles.includes(p.id));
-
-      const pool = unseen.length > 0 ? unseen : seen;
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
-
-    function renderCard() {
-      const profile = getNextProfile();
-      cardStack.innerHTML = '';
-
-      if (!profile) {
+      if (available.length === 0) {
+        cardStack.innerHTML = '';
         noMore.classList.remove('hidden');
         cardActions.classList.add('hidden');
         return;
@@ -1208,6 +1364,13 @@
       noMore.classList.add('hidden');
       cardActions.classList.remove('hidden');
 
+      // Mezclar para variedad
+      available.sort(() => Math.random() - 0.5);
+      showCard(available[0]);
+    }
+
+    function showCard(profile) {
+      cardStack.innerHTML = '';
       const card = document.createElement('div');
       card.className = 'profile-card';
       card.dataset.profileId = profile.id;
@@ -1219,21 +1382,18 @@
         <div class="swipe-indicator nope">👎</div>
         <div class="card-info">
           <div class="card-name">${profile.name} <span class="card-age">${profile.age}</span></div>
-          <div class="card-bio">${profile.bio}</div>
-          <span class="card-gender">${profile.gender}</span>
+          <div class="card-bio">${profile.bio || ''}</div>
+          <span class="card-gender">${profile.gender || ''}</span>
         </div>
       `;
-
       cardStack.appendChild(card);
-
-      // Eventos de swipe táctil / mouse
       setupSwipe(card);
-
-      // Animación de entrada
       card.style.animation = 'fadeUp 0.35s ease backwards';
     }
 
-    // ─── Swipe ───────────────────────────────────────────────────
+    // ==============================================================
+    //   SWIPE
+    // ==============================================================
     let swipeStartX = 0, swipeStartY = 0;
     let isDragging = false;
     let currentCard = null;
@@ -1245,10 +1405,9 @@
       };
 
       const onStart = (x, y) => {
-        if (state.isSwiping) return;
+        if (isSwiping) return;
         isDragging = true;
-        swipeStartX = x;
-        swipeStartY = y;
+        swipeStartX = x; swipeStartY = y;
         card.classList.add('swiping');
         currentCard = card;
       };
@@ -1257,226 +1416,170 @@
         if (!isDragging || !currentCard) return;
         const dx = x - swipeStartX;
         const dy = y - swipeStartY;
-        const rotation = dx * 0.08;
-        const opacity = Math.min(1, Math.abs(dx) / 150);
-
-        currentCard.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`;
-
-        if (dx > 30) {
-          indicators.like.classList.add('show');
-          indicators.nope.classList.remove('show');
-        } else if (dx < -30) {
-          indicators.nope.classList.add('show');
-          indicators.like.classList.remove('show');
-        } else {
-          indicators.like.classList.remove('show');
-          indicators.nope.classList.remove('show');
-        }
+        currentCard.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.08}deg)`;
+        if (dx > 30) { indicators.like.classList.add('show'); indicators.nope.classList.remove('show'); }
+        else if (dx < -30) { indicators.nope.classList.add('show'); indicators.like.classList.remove('show'); }
+        else { indicators.like.classList.remove('show'); indicators.nope.classList.remove('show'); }
       };
 
       const onEnd = () => {
         if (!isDragging || !currentCard) return;
         isDragging = false;
-        const rect = currentCard.getBoundingClientRect();
-        const cardCenter = rect.left + rect.width / 2;
-        const screenCenter = window.innerWidth / 2;
-        const dx = cardCenter - screenCenter;
-
         indicators.like.classList.remove('show');
         indicators.nope.classList.remove('show');
 
+        const rect = currentCard.getBoundingClientRect();
+        const dx = (rect.left + rect.width / 2) - (window.innerWidth / 2);
+
         if (Math.abs(dx) > 80) {
-          const isLike = dx > 0;
-          const profileId = currentCard.dataset.profileId;
-          if (isLike) {
-            handleLike(profileId);
-          } else {
-            handlePass(profileId);
-          }
+          handleAction(currentCard.dataset.profileId, dx > 0 ? 'like' : 'pass');
         } else {
-          // Regresar a la posición original
           currentCard.style.transition = 'transform 0.3s ease';
           currentCard.style.transform = '';
-          setTimeout(() => {
-            if (currentCard) currentCard.classList.remove('swiping');
-          }, 300);
+          setTimeout(() => { if (currentCard) currentCard.classList.remove('swiping'); }, 300);
         }
       };
 
-      // Mouse events
-      card.addEventListener('mousedown', e => {
-        e.preventDefault();
-        onStart(e.clientX, e.clientY);
-      });
-      document.addEventListener('mousemove', e => {
-        if (!isDragging) return;
-        onMove(e.clientX, e.clientY);
-      });
-      document.addEventListener('mouseup', () => {
-        if (isDragging) onEnd();
-      });
+      card.addEventListener('mousedown', e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+      document.addEventListener('mousemove', e => { if (isDragging) onMove(e.clientX, e.clientY); });
+      document.addEventListener('mouseup', () => { if (isDragging) onEnd(); });
 
-      // Touch events
-      card.addEventListener('touchstart', e => {
-        const t = e.touches[0];
-        onStart(t.clientX, t.clientY);
-      }, { passive: true });
-      card.addEventListener('touchmove', e => {
-        if (!isDragging) return;
-        const t = e.touches[0];
-        onMove(t.clientX, t.clientY);
-      }, { passive: true });
-      card.addEventListener('touchend', () => {
-        if (isDragging) onEnd();
-      }, { passive: true });
+      card.addEventListener('touchstart', e => { const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
+      card.addEventListener('touchmove', e => { if (isDragging) { const t = e.touches[0]; onMove(t.clientX, t.clientY); } }, { passive: true });
+      card.addEventListener('touchend', () => { if (isDragging) onEnd(); }, { passive: true });
     }
 
-    // ─── Acciones ────────────────────────────────────────────────
-    function handleLike(profileId, isSuper = false) {
-      if (state.isSwiping) return;
-      state.isSwiping = true;
+    // ==============================================================
+    //   ACCIONES: Like / Pass
+    // ==============================================================
+    async function handleAction(profileId, type) {
+      if (isSwiping) return;
+      isSwiping = true;
 
       const card = document.querySelector('.profile-card');
       if (card) {
+        const dir = type === 'like' ? 1 : -1;
         card.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-        card.style.transform = `translateX(140%) rotate(24deg)`;
+        card.style.transform = `translateX(${dir * 140}%) rotate(${dir * 24}deg)`;
         card.style.opacity = '0';
       }
 
-      setTimeout(() => {
-        if (!state.likes.includes(profileId)) {
-          state.likes.push(profileId);
+      setTimeout(async () => {
+        // Guardar interacción
+        const interaction = {
+          id: genId(),
+          fromId: currentUser.id,
+          toId: profileId,
+          type: type,
+          createdAt: new Date().toISOString()
+        };
+        await db.insert(STORE_INTERACTIONS, interaction);
+
+        // Verificar match: ¿el otro usuario ya nos dio like?
+        if (type === 'like') {
+          const theirLikes = await db.select(STORE_INTERACTIONS, { index: 'by_from', value: profileId }) || [];
+          const theyLikedMe = theirLikes.some(i => i.toId === currentUser.id && i.type === 'like');
+
+          if (theyLikedMe) {
+            // Crear match (solo si no existe ya)
+            const existingMatches = await db.selectAll(STORE_MATCHES) || [];
+            const alreadyMatched = existingMatches.some(m =>
+              (m.user1Id === currentUser.id && m.user2Id === profileId) ||
+              (m.user1Id === profileId && m.user2Id === currentUser.id)
+            );
+
+            if (!alreadyMatched) {
+              const match = {
+                id: genId(),
+                user1Id: currentUser.id,
+                user2Id: profileId,
+                createdAt: new Date().toISOString()
+              };
+              await db.insert(STORE_MATCHES, match);
+
+              // Mostrar modal de match
+              const theirProfile = await db.select(STORE_PROFILES, { id: profileId });
+              if (theirProfile) {
+                matchMyAvatar.src = currentUser.photo;
+                matchTheirAvatar.src = theirProfile.photo;
+                matchModal.classList.remove('hidden');
+                spawnHearts();
+                spawnConfetti();
+              }
+            }
+          }
         }
-        state.viewedProfiles.push(profileId);
 
-        // Verificar si hay match
-        const hadMatchBefore = state.matches.length;
-        checkForNewMatches();
-        const hasNew = state.matches.length > hadMatchBefore;
-
-        saveState();
-        renderAll();
-
-        if (hasNew) {
-          showMatchModal(profileId);
-        }
-
-        state.isSwiping = false;
+        await loadDiscover();
+        await loadMatches();
+        renderBadges();
+        isSwiping = false;
       }, 400);
     }
 
-    function handlePass(profileId) {
-      if (state.isSwiping) return;
-      state.isSwiping = true;
-
-      const card = document.querySelector('.profile-card');
-      if (card) {
-        card.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-        card.style.transform = `translateX(-140%) rotate(-24deg)`;
-        card.style.opacity = '0';
-      }
-
-      setTimeout(() => {
-        if (!state.passed.includes(profileId)) {
-          state.passed.push(profileId);
-        }
-        state.viewedProfiles.push(profileId);
-        saveState();
-        renderAll();
-        state.isSwiping = false;
-      }, 400);
-    }
-
-    // ─── Botones ─────────────────────────────────────────────────
     btnLike.addEventListener('click', () => {
       const card = document.querySelector('.profile-card');
-      if (!card) return;
-      handleLike(card.dataset.profileId);
+      if (card) handleAction(card.dataset.profileId, 'like');
     });
-
     btnPass.addEventListener('click', () => {
       const card = document.querySelector('.profile-card');
-      if (!card) return;
-      handlePass(card.dataset.profileId);
+      if (card) handleAction(card.dataset.profileId, 'pass');
     });
-
     btnSuper.addEventListener('click', () => {
       const card = document.querySelector('.profile-card');
-      if (!card) return;
-      handleLike(card.dataset.profileId, true);
+      if (card) handleAction(card.dataset.profileId, 'like');
     });
 
-    // ─── Teclado ─────────────────────────────────────────────────
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') btnLike.click();
       if (e.key === 'ArrowLeft') btnPass.click();
       if (e.key === 'ArrowUp') btnSuper.click();
     });
 
-    // ─── Matches ─────────────────────────────────────────────────
-    function renderMatches() {
+    // ==============================================================
+    //   MATCHES
+    // ==============================================================
+    async function loadMatches() {
+      if (!currentUser || currentUser.role === 'admin') return;
+
+      const allMatches = await db.selectAll(STORE_MATCHES) || [];
+      const myMatches = allMatches.filter(m => m.user1Id === currentUser.id || m.user2Id === currentUser.id);
+
       matchesGrid.innerHTML = '';
 
-      if (state.matches.length === 0) {
+      if (myMatches.length === 0) {
         matchesEmpty.classList.remove('hidden');
         matchCount.textContent = '0';
         return;
       }
 
       matchesEmpty.classList.add('hidden');
-      matchCount.textContent = state.matches.length;
+      matchCount.textContent = myMatches.length;
 
-      state.matches.forEach((m, i) => {
+      for (let i = 0; i < myMatches.length; i++) {
+        const m = myMatches[i];
+        const otherId = m.user1Id === currentUser.id ? m.user2Id : m.user1Id;
+        const profile = await db.select(STORE_PROFILES, { id: otherId });
+        if (!profile) continue;
+
         const div = document.createElement('div');
         div.className = 'match-card';
         div.style.animationDelay = `${i * 0.08}s`;
         div.innerHTML = `
-          <img src="${m.profilePhoto}" alt="${m.profileName}" loading="lazy">
-          <div class="match-name">${m.profileName}</div>
-          <div class="match-age">💜 Match</div>
+          <img src="${profile.photo}" alt="${profile.name}" loading="lazy">
+          <div class="match-name">${profile.name}</div>
+          <div class="match-age">${profile.age} años 💜</div>
         `;
         matchesGrid.appendChild(div);
-      });
-    }
-
-    // ─── Modal de Match ──────────────────────────────────────────
-    function showMatchModal(profileId) {
-      const profile = state.profiles.find(p => p.id === profileId);
-      if (!profile) return;
-
-      // Buscar el match más reciente con este perfil
-      const match = state.matches.filter(m => m.profileId === profileId)
-        .sort((a,b) => new Date(b.matchedAt) - new Date(a.matchedAt))[0];
-      if (!match) return;
-
-      matchMyAvatar.src = state.currentUser.photo || avatarUrl(state.currentUser.name);
-      matchTheirAvatar.src = profile.photo;
-      matchModal.classList.remove('hidden');
-
-      // Efecto de confeti y corazones
-      spawnHearts();
-      spawnConfetti();
-
-      // Actualizar badge de matches
-      renderBadges();
-    }
-
-    matchContinue.addEventListener('click', () => {
-      matchModal.classList.add('hidden');
-      state.hasNewMatch = false;
-      renderBadges();
-    });
-
-    // Cerrar modal con overlay click
-    matchModal.addEventListener('click', e => {
-      if (e.target === matchModal) {
-        matchModal.classList.add('hidden');
-        state.hasNewMatch = false;
-        renderBadges();
       }
-    });
+    }
 
-    // ─── Efectos especiales ──────────────────────────────────────
+    // ==============================================================
+    //   MODAL MATCH
+    // ==============================================================
+    matchContinue.addEventListener('click', () => matchModal.classList.add('hidden'));
+    matchModal.addEventListener('click', e => { if (e.target === matchModal) matchModal.classList.add('hidden'); });
+
     function spawnHearts() {
       const emojis = ['💜','❤️','💕','💗','🌸','✨'];
       for (let i = 0; i < 18; i++) {
@@ -1512,152 +1615,168 @@
       }
     }
 
-    // ─── Badges ──────────────────────────────────────────────────
-    function renderBadges() {
-      // Badge de matches
-      if (state.matches.length > 0) {
-        matchesBadge.textContent = state.matches.length;
-        matchesBadge.classList.remove('hidden');
-      } else {
-        matchesBadge.classList.add('hidden');
-      }
-
-      // Badge de likes (cuántas personas te han dado like simuladamente)
-      // Simulamos: 40% de las personas a las que has dado like también te dan like (ya está en matches)
-      const likesCount = state.likes.length;
-      if (likesCount > 0) {
-        likesBadge.textContent = likesCount;
-        likesBadge.classList.remove('hidden');
-      } else {
-        likesBadge.classList.add('hidden');
-      }
+    // ==============================================================
+    //   BADGES
+    // ==============================================================
+    async function renderBadges() {
+      if (!currentUser || currentUser.role === 'admin') return;
+      const allMatches = await db.selectAll(STORE_MATCHES) || [];
+      const count = allMatches.filter(m => m.user1Id === currentUser.id || m.user2Id === currentUser.id).length;
+      if (count > 0) { matchesBadge.textContent = count; matchesBadge.classList.remove('hidden'); }
+      else { matchesBadge.classList.add('hidden'); }
     }
 
-    // ─── Likes (panel lateral) ───────────────────────────────────
-    function renderLikesList() {
-      // No tenemos un panel dedicado de likes en este diseño,
-      // pero mostramos el badge. Al hacer click en el header se puede abrir una lista.
-    }
+    // ==============================================================
+    //   LIKES (popup informativo)
+    // ==============================================================
+    $('btn-likes').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const allInteractions = await db.selectAll(STORE_INTERACTIONS) || [];
+      const myLikes = allInteractions.filter(i => i.fromId === currentUser.id && i.type === 'like');
 
-    $('btn-likes').addEventListener('click', () => {
-      // Mostrar modal simple con la gente que le gustó
-      if (state.likes.length === 0) {
+      if (myLikes.length === 0) {
         alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');
         return;
       }
 
+      const allMatches = await db.selectAll(STORE_MATCHES) || [];
       let msg = '💜 Personas que te gustaron:\n\n';
-      state.likes.forEach(id => {
-        const p = state.profiles.find(pr => pr.id === id);
+
+      for (const like of myLikes) {
+        const p = await db.select(STORE_PROFILES, { id: like.toId });
         if (p) {
-          const isMatch = state.matches.some(m => m.profileId === id);
+          const isMatch = allMatches.some(m =>
+            (m.user1Id === currentUser.id && m.user2Id === p.id) ||
+            (m.user1Id === p.id && m.user2Id === currentUser.id)
+          );
           msg += `• ${p.name}, ${p.age} ${isMatch ? '💕 (Match!)' : '⏳'}\n`;
         }
-      });
-      msg += `\nTotal: ${state.likes.length} likes`;
+      }
+      msg += `\nTotal: ${myLikes.length} likes`;
       alert(msg);
     });
 
-    // ─── Perfil propio ──────────────────────────────────────────
+    // ==============================================================
+    //   PERFIL PROPIO
+    // ==============================================================
     $('btn-profile').addEventListener('click', () => {
-      if (!state.currentUser) return;
-      const u = state.currentUser;
-      const matchCount_ = state.matches.length;
-      const likeCount_  = state.likes.length;
-
+      if (!currentUser) return;
+      const u = currentUser;
       alert(
         `👤 Tu perfil de Rumbadoo\n\n` +
-        `Nombre: ${u.name}\n` +
-        `Edad: ${u.age}\n` +
-        `Género: ${u.gender}\n` +
+        `Nombre: ${u.name}\nEdad: ${u.age}\nGénero: ${u.gender}\n` +
         `Frase: "${u.bio || 'Sin frase'}"\n\n` +
-        `💕 Matches: ${matchCount_}\n` +
-        `👍 Likes dados: ${likeCount_}\n\n` +
-        `¿Quieres cerrar sesión? (recarga la página para reiniciar)`
+        `🔑 Contraseña: (no se muestra por seguridad)\n\n` +
+        `¿Quieres cerrar sesión? Usa el botón 🚪`
       );
     });
 
-    // ─── Tabs ────────────────────────────────────────────────────
+    // ==============================================================
+    //   TABS
+    // ==============================================================
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        switchTab(btn.dataset.tab);
+      btn.addEventListener('click', async () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        const pane = document.getElementById(btn.dataset.tab + '-pane');
+        if (pane) pane.classList.add('active');
+
+        if (btn.dataset.tab === 'matches') await loadMatches();
       });
     });
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-
-      const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-      const pane = document.getElementById(`${tabId}-pane`);
-      if (tabBtn) tabBtn.classList.add('active');
-      if (pane) pane.classList.add('active');
-
-      // Si vamos a matches, refrescar
-      if (tabId === 'matches') {
-        renderMatches();
-      }
+    // ==============================================================
+    //   ADMIN PANEL
+    // ==============================================================
+    async function showAdminPanel() {
+      // Desde login de admin
+      authScreen.classList.add('hidden');
+      mainScreen.classList.add('hidden');
+      adminScreen.classList.remove('hidden');
+      await refreshAdminPanel();
     }
 
-    // ─── Registro ────────────────────────────────────────────────
-    registerForm.addEventListener('submit', e => {
-      e.preventDefault();
+    async function refreshAdminPanel() {
+      const allProfiles = await db.selectAll(STORE_PROFILES) || [];
+      const users = allProfiles.filter(p => p.role !== 'admin');
+      const allMatches = await db.selectAll(STORE_MATCHES) || [];
+      const allInteractions = await db.selectAll(STORE_INTERACTIONS) || [];
 
-      const name  = $('reg-name').value.trim();
-      const age   = parseInt($('reg-age').value, 10);
-      const gender = $('reg-gender').value;
-      const bio   = $('reg-bio').value.trim();
-      let photo   = $('reg-photo').value.trim();
+      // Stats
+      $('admin-stats').innerHTML = `
+        <div class="admin-stat-card">
+          <div class="num">${users.length}</div>
+          <div class="label">Usuarios</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="num">${allMatches.length}</div>
+          <div class="label">Matches</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="num">${allInteractions.length}</div>
+          <div class="label">Interacciones</div>
+        </div>
+      `;
 
-      if (!name) { alert('Por favor ingresa tu nombre.'); return; }
-      if (!age || age < 18) { alert('Debes tener al menos 18 años.'); return; }
+      // Lista de perfiles
+      const list = $('admin-profile-list');
+      list.innerHTML = '';
 
-      if (!photo) {
-        photo = avatarUrl(name);
+      if (users.length === 0) {
+        list.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No hay usuarios registrados.</p>';
+        return;
       }
 
-      const userId = genId();
+      users.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'admin-profile-item';
+        div.innerHTML = `
+          <img src="${u.photo}" alt="${u.name}">
+          <div class="info">
+            <div class="name">${u.name}</div>
+            <div class="detail">${u.age} años · ${u.gender || '—'} · Creado: ${new Date(u.createdAt).toLocaleDateString()}</div>
+          </div>
+          <button class="admin-del-btn" data-id="${u.id}">Eliminar</button>
+        `;
+        list.appendChild(div);
 
-      state.currentUser = {
-        id: userId,
-        name,
-        age,
-        gender,
-        bio: bio || 'Nuevo en Rumbadoo 💜',
-        photo
-      };
+        div.querySelector('.admin-del-btn').addEventListener('click', async () => {
+          if (!confirm(`¿Eliminar a ${u.name}? Esto también borrará sus interacciones y matches.`)) return;
+          await db.delete(STORE_PROFILES, u.id);
 
-      state.likes = [];
-      state.passed = [];
-      state.matches = [];
-      state.viewedProfiles = [];
-      state.hasNewMatch = false;
+          // Limpiar interacciones y matches relacionados
+          const interactions = allInteractions.filter(i => i.fromId === u.id || i.toId === u.id);
+          for (const i of interactions) await db.delete(STORE_INTERACTIONS, i.id);
 
-      saveState();
-      showMainScreen();
-    });
+          const matches = allMatches.filter(m => m.user1Id === u.id || m.user2Id === u.id);
+          for (const m of matches) await db.delete(STORE_MATCHES, m.id);
 
-    // ─── Preview de avatar en registro ──────────────────────────
-    $('reg-photo').addEventListener('input', function() {
-      const preview = $('avatar-preview');
-      const val = this.value.trim();
-      if (val) {
-        preview.src = val;
+          await refreshAdminPanel();
+        });
+      });
+    }
+
+    adminClose.addEventListener('click', () => {
+      adminScreen.classList.add('hidden');
+      if (currentUser) {
+        if (currentUser.role === 'admin') {
+          // Admin vuelve al auth
+          currentUser = null;
+          localStorage.removeItem('rumbadoo_session');
+          showAuthScreen();
+        } else {
+          showMainScreen();
+        }
       } else {
-        const name = $('reg-name').value.trim() || 'T';
-        preview.src = avatarUrl(name || 'T');
+        showAuthScreen();
       }
     });
 
-    $('reg-name').addEventListener('input', function() {
-      const val = this.value.trim();
-      const photoUrl = $('reg-photo').value.trim();
-      if (!photoUrl) {
-        $('avatar-preview').src = avatarUrl(val || 'T');
-      }
-    });
-
-    // ─── Iniciar aplicación ─────────────────────────────────────
+    // ==============================================================
+    //   ARRANQUE
+    // ==============================================================
     document.addEventListener('DOMContentLoaded', init);
   </script>
 
