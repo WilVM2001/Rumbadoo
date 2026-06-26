@@ -1,0 +1,9 @@
+{
+  "name": "rumbadoo",
+  "version": "1.0.0",
+  "description": "💜 Rumbadoo - App de citas (Vercel + Turso)",
+  "type": "module",
+  "dependencies": {
+    "@libsql/client": "^0.14.0"
+  }
+}

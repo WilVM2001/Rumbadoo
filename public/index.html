@@ -324,9 +324,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 
 <script>
 /* ==============================================================
-   RUMBADOO — App completa con IndexedDB (Modo local)
-   100% estática, funciona en Vercel sin backend
+   RUMBADOO — App con soporte dual: API (Turso) e IndexedDB
+   Si hay servidor (Vercel + Turso), usa API → datos en la nube
+   Si no, usa IndexedDB → datos locales
    ============================================================== */
+
+// ─── CONFIG ──────────────────────────────────────────────────
+const API_BASE = window.location.origin + '/api';
 
 // ─── PERFILES DE EJEMPLO ────────────────────────────────────
 const SAMPLE_PROFILES = [
@@ -347,55 +351,152 @@ const SAMPLE_PROFILES = [
 // ─── MINISQL (IndexedDB) ─────────────────────────────────────
 class MiniSQL{
   constructor(n,v){this.n=n;this.v=v;this.db=null}
-  open(stores){
-    return new Promise((rs,rj)=>{
-      const r=indexedDB.open(this.n,this.v);
-      r.onupgradeneeded=e=>{
-        const d=e.target.result;
-        stores.forEach(s=>{
-          if(!d.objectStoreNames.contains(s.name)){
-            const st=d.createObjectStore(s.name,{keyPath:s.key||'id',autoIncrement:!!s.auto});
-            if(s.indexes)s.indexes.forEach(i=>st.createIndex(i.name,i.key,i.opts||{}));
-          }
-        });
-      };
-      r.onsuccess=e=>{this.db=e.target.result;rs()};
-      r.onerror=e=>rj(e.target.error);
-    });
-  }
-  insert(store,data){
-    return new Promise((rs,rj)=>{
-      const tx=this.db.transaction(store,'readwrite');
-      const st=tx.objectStore(store);
-      const r=st.put(data);
-      r.onsuccess=()=>rs(data);
-      r.onerror=()=>rj(r.error);
-    });
-  }
-  select(store,q){
-    return new Promise((rs,rj)=>{
-      const tx=this.db.transaction(store,'readonly');
-      const st=tx.objectStore(store);
-      let r;
-      if(!q)r=st.getAll();
-      else if(q.id)r=st.get(q.id);
-      else if(q.index&&q.value)r=st.index(q.index).getAll(q.value);
-      else r=st.getAll();
-      r.onsuccess=()=>rs(r.result);
-      r.onerror=()=>rj(r.error);
-    });
-  }
-  selectAll(store){return this.select(store)}
-  update(store,data){return this.insert(store,data)}
-  delete(store,id){
-    return new Promise((rs,rj)=>{
-      const tx=this.db.transaction(store,'readwrite');
-      tx.objectStore(store).delete(id);
-      tx.oncomplete=()=>rs();
-      tx.onerror=()=>rj(tx.error);
-    });
-  }
+  open(stores){return new Promise((rs,rj)=>{const r=indexedDB.open(this.n,this.v);r.onupgradeneeded=e=>{const d=e.target.result;stores.forEach(s=>{if(!d.objectStoreNames.contains(s.name)){const st=d.createObjectStore(s.name,{keyPath:s.key||'id',autoIncrement:!!s.auto});if(s.indexes)s.indexes.forEach(i=>st.createIndex(i.name,i.key,i.opts||{}))}})};r.onsuccess=e=>{this.db=e.target.result;rs()};r.onerror=e=>rj(e.target.error)})}
+  insert(s,d){return new Promise((rs,rj)=>{const tx=this.db.transaction(s,'readwrite');const r=tx.objectStore(s).put(d);r.onsuccess=()=>rs(d);r.onerror=()=>rj(r.error)})}
+  select(s,q){return new Promise((rs,rj)=>{const tx=this.db.transaction(s,'readonly');const st=tx.objectStore(s);let r;if(!q)r=st.getAll();else if(q.id)r=st.get(q.id);else if(q.index&&q.value)r=st.index(q.index).getAll(q.value);else r=st.getAll();r.onsuccess=()=>rs(r.result);r.onerror=()=>rj(r.error)})}
+  selectAll(s){return this.select(s)}
+  update(s,d){return this.insert(s,d)}
+  delete(s,id){return new Promise((rs,rj)=>{const tx=this.db.transaction(s,'readwrite');tx.objectStore(s).delete(id);tx.oncomplete=()=>rs();tx.onerror=()=>rj(tx.error)})}
 }
+
+// ─── APIDB (Conexión al servidor Vercel + Turso) ───────────
+class APIDB{
+  async api(path,opts={}){
+    const h={'Content-Type':'application/json',...opts.headers};
+    if(currentUser)h['x-user-id']=currentUser.id;
+    const r=await fetch(API_BASE+path,{headers:h,...opts});
+    if(!r.ok){const t=await r.text().catch(()=>'');try{const j=JSON.parse(t);throw new Error(j.error||'Error')}catch(e){if(e.message.includes('Error'))throw e;throw new Error('Error '+r.status)}}
+    return r.json()
+  }
+  async health(){try{await this.api('/health');return true}catch(e){return false}}
+  async getProfile(id){const d=await this.api('/profile/'+encodeURIComponent(id));return d.id?d:null}
+  async getProfileByName(name){return (await this.api('/profiles')).find(p=>p.name===name)||null}
+  async getAllProfiles(e){return this.api('/profiles?exclude='+encodeURIComponent(e||''))}
+  async createProfile(d){const r=await this.api('/register',{method:'POST',body:JSON.stringify(d)});return r.profile||null}
+  async updateProfile(id,d){const r=await this.api('/profile/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(d)});return r.profile||null}
+  async deleteProfile(id){await this.api('/admin/profile/'+encodeURIComponent(id),{method:'DELETE'})}
+  async getInteractionsByUser(u){return this.api('/interactions/'+encodeURIComponent(u))}
+  async createInteraction(f,t,ty){return this.api('/interactions',{method:'POST',body:JSON.stringify({fromId:f,toId:t,type:ty})})}
+  async getMatchesByUser(u){return this.api('/matches/'+encodeURIComponent(u))}
+  async getAdminStats(){const[s,p]=await Promise.all([this.api('/admin/stats'),this.api('/profiles')]);return{...s,profiles:p}}
+  async adminDeleteProfile(id){await this.api('/admin/profile/'+encodeURIComponent(id),{method:'DELETE'})}
+}
+
+// ─── DATA LAYER ─────────────────────────────────────────────
+const data={mode:'indexeddb',api:null,mini:null,STORES:[
+  {name:'profiles',key:'id',indexes:[{name:'by_name',key:'name'}]},
+  {name:'interactions',key:'id',indexes:[{name:'by_from',key:'fromId'},{name:'by_to',key:'toId'}]},
+  {name:'matches',key:'id',indexes:[{name:'by_user1',key:'user1Id'},{name:'by_user2',key:'user2Id'}]}
+],
+async init(){
+  this.api=new APIDB();const up=await this.api.health();
+  if(up){this.mode='api';return true}
+  this.mini=new MiniSQL('RumbadooDB',1);await this.mini.open(this.STORES);
+  const a=await this.mini.select('profiles',{index:'by_name',value:'__admin__'});
+  if(!a||!a.length)await this.mini.insert('profiles',{id:'admin_'+genId(),name:'__admin__',password:hashPass('admin123'),role:'admin',createdAt:new Date().toISOString()});
+  this.mode='indexeddb';return false
+},
+isApi(){return this.mode==='api'},
+async getProfile(id){
+  if(this.isApi())return this.api.getProfile(id);
+  return this.mini.select('profiles',{id})
+},
+async getProfileByName(name){
+  if(this.isApi())return this.api.getProfileByName(name);
+  const r=await this.mini.select('profiles',{index:'by_name',value:name});return r?.[0]||null
+},
+async getAllProfiles(excludeId){
+  if(this.isApi())return this.api.getAllProfiles(excludeId);
+  const all=await this.mini.selectAll('profiles')||[];return all.filter(p=>p.id!==excludeId&&p.role!=='admin')
+},
+async getProfileByNameExact(name){
+  // búsqueda exacta por nombre (register usa esto)
+  if(this.isApi()){
+    const all=await this.api.getAllProfiles();
+    return all.find(p=>p.name===name)||null
+  }
+  const r=await this.mini.select('profiles',{index:'by_name',value:name});return r?.[0]||null
+},
+async register(data){
+  if(this.isApi()){
+    const r=await this.api.api('/register',{method:'POST',body:JSON.stringify(data)});
+    return r.profile||null
+  }
+  data.id=genId();data.role='user';data.createdAt=new Date().toISOString();
+  await this.mini.insert('profiles',data);return data
+},
+async login(name,password){
+  if(this.isApi()){
+    const r=await this.api.api('/login',{method:'POST',body:JSON.stringify({name,password})});
+    return r.profile||null
+  }
+  if(name==='admin'){
+    const a=await this.mini.select('profiles',{index:'by_name',value:'__admin__'});
+    if(a&&a[0]&&a[0].password===password)return a[0];return null
+  }
+  const p=await this.mini.select('profiles',{index:'by_name',value:name});
+  if(p&&p[0]&&p[0].password===password)return p[0];return null
+},
+async updateProfile(id,data){
+  if(this.isApi()){
+    const r=await this.api.updateProfile(id,data);
+    return r||data
+  }
+  data.id=id;await this.mini.update('profiles',data);return data
+},
+async deleteProfile(id){
+  if(this.isApi())return this.api.deleteProfile(id);
+  const allI=await this.mini.selectAll('interactions')||[];
+  for(const i of allI){if(i.fromId===id||i.toId===id)await this.mini.delete('interactions',i.id)}
+  const allM=await this.mini.selectAll('matches')||[];
+  for(const m of allM){if(m.user1Id===id||m.user2Id===id)await this.mini.delete('matches',m.id)}
+  await this.mini.delete('profiles',id)
+},
+async createInteraction(fromId,toId,type){
+  if(this.isApi())return this.api.createInteraction(fromId,toId,type);
+  const id=genId();const interaction={id,fromId,toId,type,createdAt:new Date().toISOString()};
+  await this.mini.insert('interactions',interaction);
+  let match=null;
+  if(type==='like'){
+    const their=await this.mini.select('interactions',{index:'by_from',value:toId})||[];
+    if(their.some(i=>i.toId===fromId&&i.type==='like')){
+      const existing=await this.mini.selectAll('matches')||[];
+      if(!existing.some(m=>(m.user1Id===fromId&&m.user2Id===toId)||(m.user1Id===toId&&m.user2Id===fromId))){
+        const mid=genId();match={id:mid,user1Id:fromId,user2Id:toId,createdAt:new Date().toISOString()};
+        await this.mini.insert('matches',match)
+      }
+    }
+  }
+  return{interactionId:id,match}
+},
+async getInteractionsByUser(userId){
+  if(this.isApi())return this.api.getInteractionsByUser(userId);
+  const all=await this.mini.selectAll('interactions')||[];return all.filter(i=>i.fromId===userId)
+},
+async getMatchesByUser(userId){
+  if(this.isApi())return this.api.getMatchesByUser(userId);
+  const all=await this.mini.selectAll('matches')||[];return all.filter(m=>m.user1Id===userId||m.user2Id===userId)
+},
+async getAdminStats(){
+  if(this.isApi())return this.api.getAdminStats();
+  const p=await this.mini.selectAll('profiles')||[],m=await this.mini.selectAll('matches')||[],i=await this.mini.selectAll('interactions')||[];
+  return{users:p.filter(x=>x.role!=='admin').length,matches:m.length,interactions:i.length,profiles:p}
+},
+async adminDeleteProfile(id){
+  if(this.isApi())return this.api.adminDeleteProfile(id);
+  return this.deleteProfile(id)
+},
+async seedSamples(){
+  if(this.isApi())return; // En API mode los sample no se crean automáticamente
+  const existing=await this.mini.selectAll('profiles')||[];
+  const sampleIds=existing.filter(p=>p.id?.startsWith('sample_')).length;
+  if(sampleIds===0){
+    for(const sp of SAMPLE_PROFILES){
+      const dup=await this.mini.select('profiles',{index:'by_name',value:sp.name});
+      if(!dup||!dup.length)await this.mini.insert('profiles',{...sp,id:'sample_'+genId(),password:hashPass('sample'),role:'user',createdAt:new Date().toISOString()})
+    }
+  }
+}};
 
 // ─── UTILERÍAS ───────────────────────────────────────────────
 const $=id=>document.getElementById(id);
@@ -404,13 +505,7 @@ function hashPass(pw){let h=0;for(let i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charC
 function avatarUrl(name){const c=['8b5cf6','7c3aed','6b3fa0','4a2c8a','a78bfa','c4b5fd','ddd6fe','e6d5f5','2d1b69'];return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${c[name.length%c.length]}&color=fff&size=256&bold=true`}
 
 // ─── ESTADO ──────────────────────────────────────────────────
-let db,currentUser=null,isSwiping=false,loading=false;
-const STORE_P='profiles',STORE_I='interactions',STORE_M='matches';
-const STORES=[
-  {name:STORE_P,key:'id',indexes:[{name:'by_name',key:'name'}]},
-  {name:STORE_I,key:'id',indexes:[{name:'by_from',key:'fromId'},{name:'by_to',key:'toId'}]},
-  {name:STORE_M,key:'id',indexes:[{name:'by_user1',key:'user1Id'},{name:'by_user2',key:'user2Id'}]}
-];
+let currentUser=null,isSwiping=false,loading=false;
 
 // ─── DOM REFS ────────────────────────────────────────────────
 const authSc=$('auth-screen'),mainSc=$('main-screen');
@@ -429,28 +524,13 @@ const editPhotoPreview=$('edit-photo-preview'),editPhotoFile=$('edit-photo-file'
 
 // ─── INICIO ──────────────────────────────────────────────────
 async function init(){
-  db=new MiniSQL('RumbadooDB',1);
-  await db.open(STORES);
+  const isApi=await data.init();
+  await data.seedSamples(); // solo crea samples si es IndexedDB mode
 
-  // Crear admin por defecto
-  const admins=await db.select(STORE_P,{index:'by_name',value:'__admin__'});
-  if(!admins||!admins.length)await db.insert(STORE_P,{id:'admin_'+genId(),name:'__admin__',password:hashPass('admin123'),role:'admin',createdAt:new Date().toISOString()});
-
-  // Cargar perfiles de ejemplo si es primera vez
-  const existing=await db.selectAll(STORE_P)||[];
-  const sampleIds=existing.filter(p=>p.id?.startsWith('sample_')).length;
-  if(sampleIds===0){
-    for(const sp of SAMPLE_PROFILES){
-      const dup=await db.select(STORE_P,{index:'by_name',value:sp.name});
-      if(!dup||!dup.length)await db.insert(STORE_P,{...sp,id:'sample_'+genId(),password:hashPass('sample'),role:'user',createdAt:new Date().toISOString()});
-    }
-  }
-
-  // Restaurar sesión
   const saved=localStorage.getItem('rumbadoo_session');
   if(saved){
     try{
-      const profile=await db.select(STORE_P,{id:JSON.parse(saved)});
+      const profile=await data.getProfile(JSON.parse(saved));
       if(profile){currentUser=profile;showMain();return}
     }catch(e){}
   }
@@ -462,8 +542,16 @@ function showAuth(){authSc.classList.remove('hidden');mainSc.classList.add('hidd
 function showMain(){
   authSc.classList.add('hidden');mainSc.classList.remove('hidden');adminSc.classList.add('hidden');
   localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));
+  updateStatusIndicator();
   if(currentUser.role==='admin'){showAdmin();return}
   loadDiscover();loadMatches();renderBadges();
+}
+
+function updateStatusIndicator(){
+  let el=$('status-indicator');
+  if(!el){el=document.createElement('span');el.id='status-indicator';el.style.cssText='font-size:14px;cursor:pointer;margin-left:8px';el.title='Estado de conexión';document.querySelector('.main-header .logo').after(el)}
+  el.textContent=data.isApi()?'🟢':'🟡';
+  el.onclick=()=>{const m=data.isApi()?'🟢 Conectado al servidor (Turso) — datos en la nube, visibles desde cualquier dispositivo.':'🟡 Modo local (IndexedDB) — datos solo en este navegador. Para compartir, configura las variables TURSO en Vercel.';alert(m)}
 }
 
 // ─── AUTH ────────────────────────────────────────────────────
@@ -475,17 +563,9 @@ loginForm.onsubmit=async e=>{
   const name=$('login-name').value.trim(),pass=$('login-pass').value;
   if(!name||!pass){authErr.textContent='Completa todos los campos.';return}
   try{
-    if(name==='admin'){
-      const a=await db.select(STORE_P,{index:'by_name',value:'__admin__'});
-      if(a&&a[0]&&a[0].password===hashPass(pass)){
-        currentUser=a[0];localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain();return
-      }
-      authErr.textContent='Credenciales de admin inválidas.';return
-    }
-    const p=await db.select(STORE_P,{index:'by_name',value:name});
-    if(!p||!p.length){authErr.textContent='Ese usuario no existe.';return}
-    if(p[0].password!==hashPass(pass)){authErr.textContent='Contraseña incorrecta.';return}
-    currentUser=p[0];localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
+    const profile=await data.login(name,hashPass(pass));
+    if(!profile){authErr.textContent=name==='admin'?'Credenciales inválidas.':'Usuario o contraseña incorrectos.';return}
+    currentUser=profile;localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
   }catch(e){authErr.textContent=e.message}
 }
 
@@ -496,11 +576,13 @@ registerForm.onsubmit=async e=>{
   if(!name){authErr.textContent='Ingresa tu nombre.';return}
   if(pass.length<4){authErr.textContent='La contraseña debe tener al menos 4 caracteres.';return}
   if(!age||age<18){authErr.textContent='Debes tener al menos 18 años.';return}
-  const dup=await db.select(STORE_P,{index:'by_name',value:name});
-  if(dup&&dup.length){authErr.textContent='Ese nombre ya está en uso.';return}
+  const dup=await data.getProfileByNameExact(name);
+  if(dup){authErr.textContent='Ese nombre ya está en uso.';return}
   if(!photo)photo=avatarUrl(name);
-  const profile={id:genId(),name,password:hashPass(pass),age,gender,bio:bio||'Nuevo en Rumbadoo 💜',photo,role:'user',createdAt:new Date().toISOString()};
-  await db.insert(STORE_P,profile);currentUser=profile;localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
+  try{
+    const profile=await data.register({name,password:hashPass(pass),age,gender,bio:bio||'Nuevo en Rumbadoo 💜',photo});
+    currentUser=profile;localStorage.setItem('rumbadoo_session',JSON.stringify(currentUser.id));showMain()
+  }catch(e){authErr.textContent=e.message}
 }
 
 $('reg-photo').oninput=function(){const v=this.value.trim();if(v)$('avatar-preview').src=v;else $('avatar-preview').src=avatarUrl($('reg-name').value.trim()||'T')}
@@ -511,9 +593,9 @@ $('btn-logout').onclick=()=>{currentUser=null;localStorage.removeItem('rumbadoo_
 async function loadDiscover(){
   if(!currentUser||currentUser.role==='admin'||loading)return;loading=true
   try{
-    const all=await db.selectAll(STORE_P)||[];
-    const ints=await db.selectAll(STORE_I)||[];
-    const interacted=new Set(ints.filter(i=>i.fromId===currentUser.id).map(i=>i.toId));
+    const all=await data.getAllProfiles(currentUser.id);
+    const ints=await data.getInteractionsByUser(currentUser.id);
+    const interacted=new Set((ints||[]).map(i=>i.toId));
     let avail=(all||[]).filter(p=>p.id!==currentUser.id&&p.role!=='admin'&&!interacted.has(p.id));
     if(!avail.length){cardStack.innerHTML='';noMore.classList.remove('hidden');cardActions.classList.add('hidden');return}
     noMore.classList.add('hidden');cardActions.classList.remove('hidden')
@@ -551,21 +633,9 @@ async function handleAction(pid,type){
   if(c){const d=type==='like'?1:-1;c.style.transition='transform .5s ease,opacity .5s ease';c.style.transform=`translateX(${d*140}%) rotate(${d*24}deg)`;c.style.opacity='0'}
   setTimeout(async()=>{
     try{
-      const id=genId();const interaction={id,fromId:currentUser.id,toId:pid,type,createdAt:new Date().toISOString()}
-      await db.insert(STORE_I,interaction)
-      let match=null
-      if(type==='like'){
-        const their=await db.select(STORE_I,{index:'by_from',value:pid})||[]
-        if(their.some(i=>i.toId===currentUser.id&&i.type==='like')){
-          const existing=await db.selectAll(STORE_M)||[]
-          if(!existing.some(m=>(m.user1Id===currentUser.id&&m.user2Id===pid)||(m.user1Id===pid&&m.user2Id===currentUser.id))){
-            const mid=genId();match={id:mid,user1Id:currentUser.id,user2Id:pid,createdAt:new Date().toISOString()}
-            await db.insert(STORE_M,match)
-          }
-        }
-      }
-      if(match){
-        const p=await db.select(STORE_P,{id:pid})
+      const result=await data.createInteraction(currentUser.id,pid,type);
+      if(result.match){
+        const p=await data.getProfile(pid);
         if(p){matchMyAvatar.src=currentUser.photo;matchTheirAvatar.src=p.photo;matchModal.classList.remove('hidden');spawnHearts();spawnConfetti()}
       }
     }catch(e){console.error(e)}
@@ -582,13 +652,12 @@ document.onkeydown=e=>{if(e.key==='ArrowRight')btnLike.click();if(e.key==='Arrow
 async function loadMatches(){
   if(!currentUser||currentUser.role==='admin')return
   try{
-    const all=await db.selectAll(STORE_M)||[]
-    const my=all.filter(m=>m.user1Id===currentUser.id||m.user2Id===currentUser.id)
+    const all=await data.getMatchesByUser(currentUser.id)||[]
     matchesGrid.innerHTML=''
-    if(!my.length){matchesEmpty.classList.remove('hidden');matchCount.textContent='0';return}
-    matchesEmpty.classList.add('hidden');matchCount.textContent=my.length
-    const ids=my.map(m=>m.user1Id===currentUser.id?m.user2Id:m.user1Id)
-    const profiles=await Promise.all(ids.map(id=>db.select(STORE_P,{id}).catch(()=>null)))
+    if(!all.length){matchesEmpty.classList.remove('hidden');matchCount.textContent='0';return}
+    matchesEmpty.classList.add('hidden');matchCount.textContent=all.length
+    const ids=all.map(m=>m.user1Id===currentUser.id?m.user2Id:m.user1Id)
+    const profiles=await Promise.all(ids.map(id=>data.getProfile(id).catch(()=>null)))
     profiles.forEach((p,i)=>{
       if(!p)return;const d=document.createElement('div');d.className='match-card';d.style.animationDelay=`${i*.08}s`
       d.innerHTML=`<img src="${p.photo}" alt="${p.name}" loading="lazy"><div class="match-name">${p.name}</div><div class="match-age">${p.age} años 💜</div>`
@@ -612,20 +681,20 @@ function spawnConfetti(){
 // ─── BADGES ──────────────────────────────────────────────────
 async function renderBadges(){
   if(!currentUser||currentUser.role==='admin')return
-  try{const all=await db.selectAll(STORE_M)||[];const c=all.filter(m=>m.user1Id===currentUser.id||m.user2Id===currentUser.id).length;if(c>0){matchesBadge.textContent=c;matchesBadge.classList.remove('hidden')}else matchesBadge.classList.add('hidden')}catch(e){}
+  try{const all=await data.getMatchesByUser(currentUser.id)||[];if(all.length>0){matchesBadge.textContent=all.length;matchesBadge.classList.remove('hidden')}else matchesBadge.classList.add('hidden')}catch(e){}
 }
 
 // ─── LIKES ───────────────────────────────────────────────────
 $('btn-likes').onclick=async()=>{
   if(!currentUser)return
-  const all=await db.selectAll(STORE_I)||[]
-  const likes=all.filter(i=>i.fromId===currentUser.id&&i.type==='like')
+  const ints=await data.getInteractionsByUser(currentUser.id)||[]
+  const likes=ints.filter(i=>i.type==='like')
   if(!likes.length){alert('💜 No has dado like a nadie aún. ¡Explora perfiles!');return}
-  const matches=await db.selectAll(STORE_M)||[]
+  const allMatches=await data.getMatchesByUser(currentUser.id)||[]
   let msg='💜 Personas que te gustaron:\n\n'
   for(const l of likes){
-    const p=await db.select(STORE_P,{id:l.toId})
-    if(p){const isMatch=matches.some(m=>(m.user1Id===currentUser.id&&m.user2Id===p.id)||(m.user1Id===p.id&&m.user2Id===currentUser.id));msg+=`• ${p.name}, ${p.age} ${isMatch?'💕 (Match!)':'⏳'}\n`}
+    const p=await data.getProfile(l.toId)
+    if(p){const isMatch=allMatches.some(m=>(m.user1Id===currentUser.id&&m.user2Id===p.id)||(m.user1Id===p.id&&m.user2Id===currentUser.id));msg+=`• ${p.name}, ${p.age} ${isMatch?'💕 (Match!)':'⏳'}\n`}
   }
   msg+=`\nTotal: ${likes.length} likes`;alert(msg)
 }
@@ -645,9 +714,10 @@ editForm.onsubmit=async e=>{
   if(!a||a<18){alert('Debes tener al menos 18 años.');return}
   const uv=editPhotoUrl.value.trim();if(uv)p=uv
   try{
-    if(n!==currentUser.name){const d=await db.select(STORE_P,{index:'by_name',value:n});if(d&&d.length){alert('Ese nombre ya está en uso.');return}}
+    if(n!==currentUser.name){const d=await data.getProfileByNameExact(n);if(d){alert('Ese nombre ya está en uso.');return}}
     const upd={...currentUser,name:n,age:a,gender:g,bio:b||'Nuevo en Rumbadoo 💜',photo:p}
-    await db.update(STORE_P,upd);currentUser=upd;editOverlay.classList.add('hidden');alert('💜 ¡Perfil actualizado correctamente!')
+    const result=await data.updateProfile(currentUser.id,upd);
+    currentUser=result;editOverlay.classList.add('hidden');alert('💜 ¡Perfil actualizado correctamente!')
   }catch(e){alert(e.message)}
 }
 
@@ -667,21 +737,17 @@ async function showAdmin(){
 }
 async function refreshAdmin(){
   try{
-    const all=await db.selectAll(STORE_P)||[],matches=await db.selectAll(STORE_M)||[],ints=await db.selectAll(STORE_I)||[]
-    const users=all.filter(p=>p.role!=='admin')
-    $('admin-stats').innerHTML=`<div class="admin-stat-card"><div class="num">${users.length}</div><div class="label">Usuarios</div></div><div class="admin-stat-card"><div class="num">${matches.length}</div><div class="label">Matches</div></div><div class="admin-stat-card"><div class="num">${ints.length}</div><div class="label">Interacciones</div></div>`
+    const stats=await data.getAdminStats();
+    const profiles=stats.profiles||await data.getAllProfiles();
+    const users=(profiles||[]).filter(p=>p.role!=='admin')
+    $('admin-stats').innerHTML=`<div class="admin-stat-card"><div class="num">${stats.users}</div><div class="label">Usuarios</div></div><div class="admin-stat-card"><div class="num">${stats.matches}</div><div class="label">Matches</div></div><div class="admin-stat-card"><div class="num">${stats.interactions}</div><div class="label">Interacciones</div></div>`
     const list=$('admin-profile-list');list.innerHTML=''
     if(!users.length){list.innerHTML='<p style="color:var(--g400);text-align:center;padding:20px;">No hay usuarios registrados.</p>';return}
     users.forEach(u=>{
       const d=document.createElement('div');d.className='admin-profile-item'
       d.innerHTML=`<img src="${u.photo}" alt="${u.name}"><div class="info"><div class="name">${u.name}</div><div class="detail">${u.age||'?'} años · ${u.gender||'—'}</div></div><button class="admin-del-btn" data-id="${u.id}">Eliminar</button>`
       list.appendChild(d)
-      d.querySelector('.admin-del-btn').onclick=async()=>{
-        if(!confirm(`¿Eliminar a ${u.name}?`))return
-        const relI=ints.filter(i=>i.fromId===u.id||i.toId===u.id);for(const x of relI)await db.delete(STORE_I,x.id)
-        const relM=matches.filter(m=>m.user1Id===u.id||m.user2Id===u.id);for(const x of relM)await db.delete(STORE_M,x.id)
-        await db.delete(STORE_P,u.id);await refreshAdmin()
-      }
+      d.querySelector('.admin-del-btn').onclick=async()=>{if(!confirm(`¿Eliminar a ${u.name}?`))return;await data.adminDeleteProfile(u.id);await refreshAdmin()}
     })
   }catch(e){console.error(e)}
 }
