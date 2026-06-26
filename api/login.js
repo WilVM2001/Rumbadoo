@@ -1,8 +1,14 @@
-import { db, ensureSchema, hashPass, json, error } from '../lib/db.js';
+import { db, ensureSchema, hashPass, json, error, setCors } from '../lib/db.js';
+import { rateLimit } from '../lib/middleware.js';
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return json(res, {});
-  if (req.method !== 'POST') return error(res, 'Método no permitido', 405);
+  if (req.method === 'OPTIONS') { setCors(res); return res.status(204).end(); }
+  if (req.method !== 'POST') { setCors(res); return res.status(405).json({ error: 'Método no permitido' }); }
+
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  if (!rateLimit('login:' + ip, 10, 60000)) {
+    return error(res, 'Demasiados intentos. Espera un minuto.', 429);
+  }
 
   try {
     await ensureSchema();

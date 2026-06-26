@@ -1,13 +1,21 @@
-import { db, ensureSchema, genId, json, error } from '../lib/db.js';
+import { db, ensureSchema, genId, json, error, setCors } from '../lib/db.js';
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return json(res, {});
-  if (req.method !== 'POST') return error(res, 'Método no permitido', 405);
+  if (req.method === 'OPTIONS') { setCors(res); return res.status(204).end(); }
+  if (req.method !== 'POST') { setCors(res); return res.status(405).json({ error: 'Método no permitido' }); }
 
   try {
     await ensureSchema();
     const { fromId, toId, type } = req.body;
     if (!fromId || !toId || !type) return error(res, 'Faltan campos.');
+
+    // Validar que ambos perfiles existan
+    const [from, to] = await Promise.all([
+      db.execute("SELECT id FROM profiles WHERE id = ?", [fromId]),
+      db.execute("SELECT id FROM profiles WHERE id = ?", [toId])
+    ]);
+    if (from.rows.length === 0) return error(res, 'Usuario origen no existe.', 404);
+    if (to.rows.length === 0) return error(res, 'Usuario destino no existe.', 404);
 
     const id = genId();
     await db.execute("INSERT INTO interactions (id, fromId, toId, type, createdAt) VALUES (?, ?, ?, ?, datetime('now'))", [id, fromId, toId, type]);

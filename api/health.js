@@ -1,7 +1,7 @@
-import { ensureSchema, json } from '../lib/db.js';
+import { ensureSchema, json, setCors } from '../lib/db.js';
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return json(res, {});
+  if (req.method === 'OPTIONS') { setCors(res); return res.status(204).end(); }
   try {
     await ensureSchema();
     json(res, { status: 'ok', uptime: process.uptime() });

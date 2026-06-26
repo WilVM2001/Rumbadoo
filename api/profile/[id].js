@@ -1,10 +1,12 @@
-import { db, ensureSchema, json, error } from '../../lib/db.js';
+import { db, ensureSchema, json, error, setCors } from '../../lib/db.js';
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return json(res, {});
+  if (req.method === 'OPTIONS') { setCors(res); return res.status(204).end(); }
   await ensureSchema();
 
   const { id } = req.query;
+
+  if (!id) { setCors(res); return res.status(400).json({ error: 'ID requerido' }); }
 
   if (req.method === 'GET') {
     try {
@@ -39,5 +41,5 @@ export default async function handler(req, res) {
     return;
   }
 
-  error(res, 'Método no permitido', 405);
+  setCors(res); res.status(405).json({ error: 'Método no permitido' });
 }

@@ -1,13 +1,21 @@
-import { db, ensureSchema, hashPass, genId, json, error } from '../lib/db.js';
+import { db, ensureSchema, hashPass, genId, json, error, setCors } from '../lib/db.js';
+import { rateLimit } from '../lib/middleware.js';
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return json(res, {});
-  if (req.method !== 'POST') return error(res, 'Método no permitido', 405);
+  if (req.method === 'OPTIONS') { setCors(res); return res.status(204).end(); }
+  if (req.method !== 'POST') { setCors(res); return res.status(405).json({ error: 'Método no permitido' }); }
+
+  // Rate limiting por IP
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  if (!rateLimit('register:' + ip, 3, 60000)) {
+    return error(res, 'Demasiados intentos. Espera un minuto.', 429);
+  }
 
   try {
     await ensureSchema();
     const { name, password, age, gender, bio, photo } = req.body;
     if (!name || !password || !age) return error(res, 'Faltan campos requeridos.');
+    if (password.length < 4) return error(res, 'La contraseña debe tener al menos 4 caracteres.');
 
     const existing = await db.execute("SELECT id FROM profiles WHERE name = ?", [name]);
     if (existing.rows.length > 0) return error(res, 'Ese nombre ya está en uso.', 409);

@@ -1233,10 +1233,9 @@
       constructor() { this.base = window.location.origin + '/api'; }
 
       async api(path, opts = {}) {
-        const res = await fetch(this.base + path, {
-          headers: { 'Content-Type': 'application/json', ...opts.headers },
-          ...opts
-        });
+        const headers = { 'Content-Type': 'application/json', ...opts.headers };
+        if (currentUser) headers['x-user-id'] = currentUser.id;
+        const res = await fetch(this.base + path, { headers, ...opts });
         if (!res.ok) {
           const txt = await res.text().catch(() => '');
           try { const j = JSON.parse(txt); throw new Error(j.error || 'Error del servidor'); }

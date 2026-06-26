@@ -1,8 +1,8 @@
-import { db, ensureSchema, json, error } from '../../lib/db.js';
+import { db, ensureSchema, json, error, setCors } from '../../lib/db.js';
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return json(res, {});
-  if (req.method !== 'GET') return error(res, 'Método no permitido', 405);
+  if (req.method === 'OPTIONS') { setCors(res); return res.status(204).end(); }
+  if (req.method !== 'GET') { setCors(res); return res.status(405).json({ error: 'Método no permitido' }); }
 
   try {
     await ensureSchema();
