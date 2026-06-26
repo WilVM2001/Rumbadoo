@@ -4,9 +4,12 @@
   "description": "💜 Rumbadoo - App de citas (Vercel + Turso)",
   "type": "module",
   "scripts": {
-    "dev": "node server.js"
+    "dev": "vercel dev"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0"
+  },
+  "devDependencies": {
+    "vercel": "^39.0.0"
   }
 }
