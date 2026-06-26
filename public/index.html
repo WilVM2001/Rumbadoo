@@ -1151,11 +1151,22 @@
     const API = window.location.origin + '/api';
 
     async function api(path, opts = {}) {
-      const res = await fetch(API + path, {
-        headers: { 'Content-Type': 'application/json', ...opts.headers },
-        ...opts
-      });
-      const data = await res.json();
+      let res;
+      try {
+        res = await fetch(API + path, {
+          headers: { 'Content-Type': 'application/json', ...opts.headers },
+          ...opts
+        });
+      } catch (e) {
+        throw new Error('No se puede conectar al servidor. Asegúrate de ejecutar: node server.js');
+      }
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        const text = await res.text();
+        throw new Error('El servidor no respondió correctamente. Verifica que el servidor esté corriendo en http://localhost:3000');
+      }
       if (!res.ok) throw new Error(data.error || 'Error del servidor');
       return data;
     }
@@ -1218,6 +1229,27 @@
     //   INICIALIZACIÓN
     // ==============================================================
     async function init() {
+      // Detectar si se abrió desde el sistema de archivos
+      if (window.location.protocol === 'file:') {
+        document.body.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:var(--font);background:linear-gradient(135deg,#2d1b69,#4a2c8a);color:white;padding:40px;text-align:center;">
+            <div style="font-size:64px;margin-bottom:16px;">💜</div>
+            <h1 style="font-size:28px;font-weight:900;margin-bottom:8px;">Rumbadoo</h1>
+            <p style="font-size:16px;opacity:.9;margin-bottom:24px;max-width:400px;">
+              Esta app necesita un servidor. Ejecuta estos comandos:
+            </p>
+            <pre style="background:rgba(255,255,255,.1);padding:16px 24px;border-radius:12px;font-size:14px;text-align:left;line-height:1.8;">
+  cd Rumbadoo
+  npm install
+  node server.js</pre>
+            <p style="margin-top:24px;font-size:14px;opacity:.7;">
+              Luego abre <strong>http://localhost:3000</strong> en tu navegador
+            </p>
+          </div>
+        `;
+        return;
+      }
+
       const saved = localStorage.getItem('rumbadoo_session');
       if (saved) {
         try {
