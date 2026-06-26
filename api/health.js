@@ -1,4 +1,4 @@
-import { ensureSchema, json } from '../../lib/db.js';
+import { ensureSchema, json } from '../lib/db.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return json(res, {});

@@ -1,5 +1,6 @@
 import { db, ensureSchema, json, error } from '../../../lib/db.js';
 
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return json(res, {});
   if (req.method !== 'DELETE') return error(res, 'Método no permitido', 405);

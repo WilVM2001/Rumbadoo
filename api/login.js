@@ -1,4 +1,4 @@
-import { db, ensureSchema, hashPass, json, error } from '../../lib/db.js';
+import { db, ensureSchema, hashPass, json, error } from '../lib/db.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return json(res, {});
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const { name, password } = req.body;
     if (!name || !password) return error(res, 'Faltan campos.');
 
-    if (name.toLowerCase() === 'admin') {
+    if (name === 'admin') {
       const a = await db.execute("SELECT * FROM profiles WHERE name = '__admin__'");
       if (a.rows.length > 0 && a.rows[0].password === hashPass(password)) {
         const p = { ...a.rows[0] };

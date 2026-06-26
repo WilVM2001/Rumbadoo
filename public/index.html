@@ -1144,7 +1144,7 @@
 
   <script>
     /* ==============================================================
-       RUMBADOO — App full-stack con IndexedDB + Supabase
+       RUMBADOO — App full-stack (IndexedDB + API serverless)
        ============================================================== */
 
     // ─── Utilidades ──────────────────────────────────────────
@@ -1227,10 +1227,7 @@
     }
 
     // ==============================================================
-    //   CAPA 2: SupabaseDB (REST API en la nube)
-    // ==============================================================
-    // ==============================================================
-    //   CAPA 2: APIDB — Conexión al servidor Express
+//   CAPA 2: APIDB — Conexión al backend (Vercel serverless)
     // ==============================================================
     class APIDB {
       constructor() { this.base = window.location.origin + '/api'; }
@@ -1346,8 +1343,10 @@
       async createProfile(data) {
         if (this.mode === 'api') {
           const res = await this.backend.createProfile(data);
-          return res.profile || data;
+          return res.profile || { ...data, id: res.profile?.id || genId() };
         }
+        const id = genId();
+        data.id = id;
         await this.mini.insert('profiles', data);
         return data;
       },
@@ -1572,8 +1571,7 @@
       if (!name || !pass) { authError.textContent = 'Completa todos los campos.'; return; }
 
       try {
-        // Admin login
-        if (name.toLowerCase() === 'admin') {
+        if (name === 'admin') {
           const admin = await data.getProfileByName('__admin__');
           if (admin && admin.password === hashPass(pass)) {
             currentUser = admin;
@@ -1615,21 +1613,16 @@
 
       if (!photo) photo = avatarUrl(name);
 
-      const profile = {
-        id: genId(),
-        name,
-        password: hashPass(pass),
-        age,
-        gender,
-        bio: bio || 'Nuevo en Rumbadoo 💜',
-        photo,
-        role: 'user',
-        createdAt: new Date().toISOString()
-      };
-
       try {
-        await data.createProfile(profile);
-        currentUser = profile;
+        const created = await data.createProfile({
+          name,
+          password: hashPass(pass),
+          age,
+          gender,
+          bio: bio || 'Nuevo en Rumbadoo 💜',
+          photo
+        });
+        currentUser = created.id ? created : { ...created, id: created.id };
         localStorage.setItem('rumbadoo_session', JSON.stringify(currentUser.id));
         showMainScreen();
       } catch (err) {
@@ -1794,10 +1787,15 @@
           console.error('Error en interacción:', e);
         }
 
-        await loadDiscover();
-        await loadMatches();
-        renderBadges();
-        isSwiping = false;
+        try {
+          await loadDiscover();
+          await loadMatches();
+          renderBadges();
+        } catch(e) {
+          console.error('Error refrescando:', e);
+        } finally {
+          isSwiping = false;
+        }
       }, 400);
     }
 
@@ -2021,9 +2019,10 @@
           if (dup) { alert('Ese nombre ya está en uso.'); return; }
         }
 
-        const updated = { ...currentUser, name, age, gender, bio: bio || 'Nuevo en Rumbadoo 💜', photo };
-        await data.updateProfile(currentUser.id, updated);
-        currentUser = updated;
+        const result = await data.updateProfile(currentUser.id, {
+          name, age, gender, bio: bio || 'Nuevo en Rumbadoo 💜', photo
+        });
+        currentUser = result.profile || result;
         editOverlay.classList.add('hidden');
         alert('💜 ¡Perfil actualizado correctamente!');
       } catch (err) {
